@@ -174,43 +174,6 @@ public class ReaderSdf2500 {
 	 * @param comp 
 	 */
 	public void readData(int code, Set<DataSdf2500> set, JComponent comp) {
-		File dir = this.db.getSdf2500(code);
-		if (dir != null && dir.isDirectory()) {
-			for (File subdir : dir.listFiles()) {
-				if (subdir.isDirectory()) {
-					String name = subdir.getName();
-					if (!set.contains(name)) {
-						DataSdf2500 data = null;
-						String path = this.getSerializeFilePath(name);
-						try {
-							Object obj = this.db.readSerializable(path);
-							if (obj instanceof DataSdf2500) {
-								data = (DataSdf2500) obj;
-							}
-						} catch (Throwable e) {
-							data = null;
-						}
-						if (data == null) {
-							data = new DataSdf2500(name);
-							this.readGyousei(data, subdir);
-							this.readMizu(data, subdir);
-							this.readOthers(data, subdir);
-							this.readRoad(data, subdir);
-							this.readTatemono(data, subdir);
-							// TODO 読み込みが中途半端な場合には保存しないほうがいい。
-							this.db.writeSerializable(path, data);
-						}
-						boolean ret = false;
-						synchronized (set) {
-							ret = set.add(data);
-						}
-						if (ret) {
-							comp.repaint();
-						}
-					}
-				}
-			}
-		}
 	}
 	
 	private final String serializeDir = "sdf2500";

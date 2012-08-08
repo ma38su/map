@@ -23,8 +23,6 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import jp.gr.java_conf.dangan.util.lha.LhaHeader;
-import jp.gr.java_conf.dangan.util.lha.LhaInputStream;
 import jp.sourceforge.ma38su.util.DLFile;
 import jp.sourceforge.ma38su.util.GeneralFileFilter;
 import jp.sourceforge.ma38su.util.Log;
@@ -56,10 +54,6 @@ public class FileDatabase extends Observable {
 			Log.err(this, "failure: delete "+ this.SERIALIZE_DIR);
 		}
 	}
-	/**
-	 * 数値地図のベースとなるURL
-	 */
-	private static final String SDF_URL = "http://sdf.gsi.go.jp/";
 
 	/**
 	 * FreeGISの世界地図データ
@@ -216,65 +210,6 @@ public class FileDatabase extends Observable {
 
 	/**
 	 * 圧縮ファイルを展開します。
-	 * @param lzh 展開するファイル
-	 * @param dir 展開するディレクトリ
-	 * @return 展開したファイル配列
-	 * @throws IOException 入出力エラー
-	 */
-	private File[] extractLzh(File lzh, File dir) throws IOException {
-		long start = System.currentTimeMillis();
-		boolean isExtracted = false;
-		LhaInputStream in = null;
-		List<File> extracted = new ArrayList<File>();
-		try {
-			in = new LhaInputStream(new FileInputStream(lzh));
-			LhaHeader entry;
-			while ((entry = in.getNextEntry()) != null) {
-				String entryPath = entry.getPath();
-				/* 出力先ファイル */
-				File outFile = new File(dir.getCanonicalPath() + File.separatorChar + entryPath);
-				if (!outFile.exists() || entry.getOriginalSize() != outFile.length()) {
-					/* entryPathにディレクトリを含む場合があるので */
-					File dirParent = outFile.getParentFile();
-					if(!dirParent.isDirectory()) {
-						if (!dirParent.mkdir()) {
-							throw new IOException("extract mkdir failed");
-						}
-					}
-					/* ディレクトリはmkdirで作成する必要がある */
-					if (entryPath.endsWith(File.separator)) {
-						if (!outFile.isDirectory() && !outFile.mkdirs()) {
-							throw new IOException("extract mkdir failed");
-						}
-					} else {
-						FileOutputStream out = null;
-						try {
-							out = new FileOutputStream(outFile);
-							this.copy(in, out);
-						} finally {
-							if (out != null) {
-								out.close();
-							}
-						}
-					}
-					isExtracted = true;
-				}
-				extracted.add(outFile);
-			}
-		} finally {
-			if (in != null) {
-				in.close();
-			}
-		}
-		long end = System.currentTimeMillis();
-		if (isExtracted) {
-			Log.out(this, "extract " + lzh + " / " + (end - start) + "ms");
-		}
-		return extracted.toArray(new File[]{});
-	}
-
-	/**
-	 * 圧縮ファイルを展開します。
 	 * @param zip 展開するファイル
 	 * @param dir 展開するディレクトリ
 	 * @param filter ファイルフィルター
@@ -396,48 +331,6 @@ public class FileDatabase extends Observable {
 		return extracts[0];
 	}
 
-	/**
-	 * 市区町村番号に対応するファイル配列を取得します。
-	 * @param code 市区町村番号
-	 * @return ディレクトリ
-	 * @throws IOException 入出力エラー
-	 */
-	public File getSdf2500(int code) {
-		String stringCode = this.cityFormat(code);
-		// 保存先ディレクトリ
-		File dir = new File(this.CACHE_DIR + "sdf2500" + File.separatorChar + this.prefectureFormat(code / 1000) + File.separatorChar + stringCode + File.separatorChar);
-		try {
-			if (code == 25208) {
-				// 滋賀県栗東市 => 滋賀県栗東町
-				code = 25321;
-			}
-			// 圧縮ファイル
-			DLFile lzh = new DLFile("SDF2500 "+ code, dir.getCanonicalPath() + File.separatorChar + stringCode + ".lzh");
-			if (lzh.exists() || !dir.isDirectory() || dir.list().length == 0) {
-				URL url = new URL(FileDatabase.SDF_URL + "data2500/" +  this.prefecture[code / 1000] +'/'+ this.cityFormat(code) + ".lzh");
-				if(!this.download(url, lzh)) {
-					/**
-					 * ダウンロードできなければ、ディレクトリは存在しない。
-					 * ディレクトリの有無で数値地図2500の扱いを決める。
-					 */
-					dir = null;
-				}
-			}
-			if(dir != null && lzh.exists()) {
-				// ファイルの展開
-				this.extractLzh(lzh, dir);
-				if(!lzh.delete()){
-					throw new IOException("delete failure: "+ lzh.getCanonicalPath());
-				}
-			}
-		} catch (Throwable e) {
-			Log.err(this, e);
-			dir = null;
-		}
-		return dir;
-	}
-
-		
 	/**
 	 * 世界地図データの取得
 	 * @return 世界地図データ

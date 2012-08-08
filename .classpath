@@ -3,7 +3,6 @@
 	<classpathentry kind="src" path=""/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/Users/ma38su/Documents/workspace/lib/browserlancher.jar"/>
-	<classpathentry kind="lib" path="/Users/ma38su/Documents/workspace/lib/dangan.jar"/>
 	<classpathentry kind="lib" path="/Users/ma38su/Documents/workspace/lib/j_scalc.jar"/>
 	<classpathentry kind="output" path=""/>
 </classpath>

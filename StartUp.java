@@ -21,13 +21,10 @@ import index.CellMethod;
 
 import java.awt.BorderLayout;
 import java.awt.Polygon;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
-import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JRootPane;
@@ -93,16 +90,6 @@ public class StartUp {
 		frame.setTitle(title);
 
 		final Setting setting = new Setting(mapDir + "setting.ini");
-		boolean isBug = !"false".equals(setting.get(Setting.KEY_REPORT));
-		final JCheckBox cbox = new JCheckBox("今後も問題報告に協力する", isBug);
-
-		cbox.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				setting.set(Setting.KEY_REPORT, Boolean.toString(cbox.isSelected()));
-			}
-		});
-
-		DialogFactory.setBugCheckBox(cbox);
 
 		CodeDatabase codeDB;
 		try {

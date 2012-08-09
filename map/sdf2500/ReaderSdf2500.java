@@ -22,8 +22,6 @@ import jp.sourceforge.ma38su.util.Log;
 
 import map.Curve;
 import map.Road;
-import util.JasmineUtil;
-import database.FileDatabase;
 
 /**
  * 数値地図2500を読み込むためのクラス
@@ -33,13 +31,7 @@ public class ReaderSdf2500 {
 
 	private final String CHARSET = "SJIS";
 
-	/**
-	 * ファイルデータベース
-	 */
-	private FileDatabase db;
-
-	public ReaderSdf2500(FileDatabase db) {
-		this.db = db;
+	public ReaderSdf2500() {
 	}
 	
 	/**
@@ -85,7 +77,7 @@ public class ReaderSdf2500 {
 			String line = in.readLine();
 			String[] param = csv.split(line);
 //			int flag = Integer.parseInt(param[5]);
-			int kei = Integer.parseInt(param[6]);
+//			int kei = Integer.parseInt(param[6]);
 			double x0 = Double.parseDouble(param[8]); // 8
 			double y0 = Double.parseDouble(param[9]); // 9
 			int length = 0;
@@ -111,9 +103,8 @@ public class ReaderSdf2500 {
 				} else {
 					double x = x0 + Double.parseDouble(param[0]);
 					double y = y0 + Double.parseDouble(param[1]);
-					Point2D point = JasmineUtil.toLatLong(x, y, kei);
-					aryX[count] = point.getX();
-					aryY[count] = point.getY();
+					aryX[count] = x;
+					aryY[count] = y;
 					count++;
 				}
 			}
@@ -188,7 +179,7 @@ public class ReaderSdf2500 {
 	 * @param data 読み込むデータ
 	 * @param dir 読み込むディレクトリ
 	 */
-	private void readGyousei(DataSdf2500 data, File dir) {
+	void readGyousei(DataSdf2500 data, File dir) {
 		ExtendedPolygon[] townPolygon = null;
 		ExtendedPolygon[] cityPolygon = null;
 		if (townPolygon == null || cityPolygon == null) {
@@ -237,7 +228,7 @@ public class ReaderSdf2500 {
 	 * @param data
 	 * @param dir
 	 */
-	private void readMizu(DataSdf2500 data, File dir) {
+	void readMizu(DataSdf2500 data, File dir) {
 		ExtendedPolygon[] mizuPgn = null;
 		Curve[] mizuArc = null;
 		if (mizuPgn == null || mizuArc == null) {
@@ -276,7 +267,7 @@ public class ReaderSdf2500 {
 		}
 	}
 
-	private void readOthers(DataSdf2500 data, File dir) {
+	void readOthers(DataSdf2500 data, File dir) {
 		try {
 			String path = dir.getCanonicalPath() + File.separatorChar + "others" + File.separatorChar;
 			File dataFile = new File(path + "others.arc");
@@ -373,14 +364,14 @@ public class ReaderSdf2500 {
 				String line = in.readLine();
 				String[] param = csv.split(line);
 				// int flag = Integer.parseInt(param[5]);
-				int kei = Integer.parseInt(param[6]);
+//				int kei = Integer.parseInt(param[6]);
 				double x0 = Double.parseDouble(param[8]); // 8
 				double y0 = Double.parseDouble(param[9]); // 9
 				while ((line = in.readLine()) != null) {
 					param = csv.split(line);
 					if (Integer.parseInt(param[0].substring(1)) == 2420) {
 						int id = Integer.parseInt(param[1]);
-						Point2D p = JasmineUtil.toLatLong(x0 + Double.parseDouble(param[2]), y0 + Double.parseDouble(param[3]), kei);
+						Point2D p = new Point2D.Double(x0 + Double.parseDouble(param[2]), y0 + Double.parseDouble(param[3]));
 						map.put(id, new ExtendedPoint((int)(p.getX() * 3600000 + 0.5), (int)(p.getY() * 3600000 + 0.5)));
 					}
 				}
@@ -531,7 +522,7 @@ public class ReaderSdf2500 {
 	 * @param data
 	 * @param dir
 	 */
-	private void readRoad(DataSdf2500 data, File dir) {
+	void readRoad(DataSdf2500 data, File dir) {
 		Road[][] roads = null;
 		if (roads == null) {
 			int maxWidth = 4;
@@ -614,7 +605,7 @@ public class ReaderSdf2500 {
 	 * @param file
 	 * @return 読み込みに成功すればtrue、失敗すればfalseを返します。
 	 */
-	private boolean readTatemono(DataSdf2500 data, File file) {
+	boolean readTatemono(DataSdf2500 data, File file) {
 		List<ExtendedPolygon> tatemono = new ArrayList<ExtendedPolygon>();
 		List<Curve> arcList = new ArrayList<Curve>();
 		try {

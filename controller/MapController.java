@@ -1,6 +1,5 @@
 package controller;
 
-import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
@@ -9,21 +8,13 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.io.IOException;
 
 import javax.print.PrintException;
 import javax.swing.AbstractButton;
 import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 
 import jp.sourceforge.ma38su.gui.Output;
 import jp.sourceforge.ma38su.util.Log;
-
-import org.biojava.bio.program.das.client.BrowserLauncher;
 
 import util.Setting;
 import util.Version;
@@ -97,16 +88,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 			this.updateCheckItem.setVisible(true);
 		} else if (command.equals("about")) {
 			DialogFactory.aboutDialog();
-		} else if (command.startsWith("web")) {
-			try {
-				BrowserLauncher.openURL("http://ma38su.sourceforge.jp/map/"+ command.substring(4) +"/");
-			} catch (IOException e1) {
-				JPanel text = new JPanel(new GridLayout(0, 1, 0, 0));
-				text.add(new JLabel("ブラウザを開けませんでした。"));
-				text.add(new JLabel("Digital Mapの詳細はWebをご覧ください。"));
-				text.add(new JTextField("http://ma38su.sourceforge.jp/map/manual/", SwingConstants.CENTER));
-				JOptionPane.showMessageDialog(null, text, "IO Exception", JOptionPane.ERROR_MESSAGE);
-			}
 		} else if (command.startsWith("export")) {
 			try {
 				while (!this.panel.isLoaded()) {

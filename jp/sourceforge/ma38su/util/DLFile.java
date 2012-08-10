@@ -56,7 +56,7 @@ public class DLFile extends File {
 			sb.append('%');
 			break;
 		case STATE_READ :
-			sb.append("READ");
+			sb.append("READ　");
 			sb.append(this.label);
 			break;
 		}

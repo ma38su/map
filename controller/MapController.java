@@ -82,19 +82,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 			} catch (PrintException ex) {
 				Log.err(this, ex);
 			}
-		} else if (command.startsWith("label")) {
-			if (command.endsWith("govt")) {
-				this.panel.switchLabel(MapPanel.lABEL_PLACE_GOVT);
-			} else if (command.endsWith("Station")) {
-				this.panel.switchLabel(MapPanel.LABEL_STATION);
-			} else if (command.endsWith("City")) {
-				this.panel.switchLabel(MapPanel.LABEL_PLACE);
-			} else if (command.endsWith("Facility")) {
-				this.panel.switchLabel(MapPanel.LABEL_FACILITY);
-			} else if (command.endsWith("failure")) {
-				this.panel.switchLabelFailure();
-			}
-			this.panel.repaint();
 		} else if (command.startsWith("move_")) {
 			if (command.equals("move_location")) {
 				DialogFactory.locationDialog(this.panel, this);
@@ -115,23 +102,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 					this.panel.zoom(this.x, this.y, -1);
 				}
 				this.panel.repaint(); 
-			}
-		} else if (command.startsWith("show")) {
-			if (command.endsWith("roadway")) {
-				this.panel.switchRoadway();
-				this.panel.repaint();
-			} else if (command.endsWith("highway")) {
-					this.panel.switchHighway();
-					this.panel.repaint();
-			} else if (command.endsWith("river")) {
-				this.panel.switchRiver();
-				this.panel.repaint();
-			} else if (command.endsWith("mesh")) {
-				this.panel.switchMesh();
-				this.panel.repaint();
-			} else if (command.endsWith("axis")) {
-				this.panel.switchAxis();
-				this.panel.repaint();
 			}
 		}
 	}

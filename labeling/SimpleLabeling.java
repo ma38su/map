@@ -16,6 +16,8 @@ import java.util.Map;
 import view.MapPanel;
 
 import map.ksj.BusStop;
+import map.ksj.CityAreas;
+import map.ksj.CityInfo;
 import map.ksj.Station;
 
 /**
@@ -277,6 +279,73 @@ public class SimpleLabeling {
 		}
 		
 	}
+	
+	public void add(CityAreas[] areas) {
+		Font font = this.g.getFont();
+		FontMetrics metrics = this.g.getFontMetrics();
+		int fontAscent = metrics.getAscent();
+		int fontHeight = metrics.getHeight();
+		
+		List<FixedLabel> list = this.label.get(font);
+		if (list == null) {
+			list = new ArrayList<FixedLabel>();
+			this.label.put(font, list);
+		}
+		for (CityAreas area : areas) {
+			CityInfo info = area.getInfo();
+			String name = info.getCn2();
+			
+			int lat = area.getY();
+			int lng = area.getX();
+			// 表示領域内のであれば描画する
+			if (this.screen0.contains(lng, lat)) {
+				
+				int r = (int) (2 / scale + 0.5);
+				int r2 = (int) (4 / scale + 0.5);
+				int x = (int) ((lng - this.screen0.x) * this.scale);
+				int y = this.screen.height - (int) ((lat - this.screen0.y) * this.scale);
+
+				int fontWidth = metrics.stringWidth(name);
+
+				// 施設の位置を描画する
+				boolean flag = false;
+				Rectangle labelCandidate = new Rectangle();
+				labelCandidate.width = fontWidth + 8;
+				labelCandidate.height = fontHeight + 3;
+				
+				for (int i = 0; i < 4; i++) {
+					boolean isLap = false;
+					labelCandidate.x = x - (i / 2) * labelCandidate.width;
+					labelCandidate.y = y - (i % 2) * labelCandidate.height;
+					
+					for (Rectangle rect : this.lap) {
+						if (labelCandidate.intersects(rect)) {
+							isLap = true;
+							break;
+						}
+					}
+
+					// 重なるか，スクリーン内からはみでる場合は再計算
+					if (isLap || !this.screen.contains(labelCandidate)) {
+						continue;
+					}
+
+					this.lap.add(labelCandidate);
+					list.add(new FixedLabel(name, labelCandidate.x + 2 + (i / 2) * (labelCandidate.width - fontWidth - 4), labelCandidate.y + fontAscent + (i % 2) * 3));
+					flag = true;
+					break;
+				}
+				if (flag) {
+					this.g.setColor(Color.DARK_GRAY);
+					this.g.fillOval(lng - r, lat - r, r2, r2);
+				} else if (this.isFailure) {
+					this.g.setColor(Color.GRAY);
+					this.g.drawLine(x - r, y - r, x + r, y + r);
+					this.g.drawLine(x + r, y - r, x - r, y + r);
+				}
+			}
+		}
+	}
 
 	public void add(Station[] stations) {
 		Font font = this.g.getFont();
@@ -482,8 +551,8 @@ public class SimpleLabeling {
 	 * @param rendering 
 	 */
 	public void draw() {
-		if (this.isTextAntialiasing){
-			this.g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		if (this.isTextAntialiasing) {
+			this.g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP);
 		} else {
 			this.g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 		}

@@ -3,26 +3,18 @@ package map;
 import index.CellBounds;
 import index.CellMethod;
 
-import java.awt.Point;
-import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import jp.sourceforge.ma38su.util.Log;
 
-import map.ksj.KsjPrefecture;
+import map.ksj.PrefectureCollection;
 import map.ksj.RailwayCollection;
-import map.route.RouteNavigation;
-import map.sdf25k.Node;
-import map.sdf25k.ReaderSdf25k;
 import view.MapPanel;
 import view.StatusBar;
 import database.FileDatabase;
@@ -57,12 +49,7 @@ public class MapDataManager extends Thread {
 	 */
 	final MapPanel panel;
 
-	private KsjPrefecture[] prefecture;
-
-	/**
-	 * 数値地図25000を読み込むためのクラス
-	 */
-	private final ReaderSdf25k readerSdf25k;
+	private PrefectureCollection[] prefecture;
 
 	private final KsjDataManager ksjMgr;
 	
@@ -81,9 +68,8 @@ public class MapDataManager extends Thread {
 		this.mapCity = new HashMap<Integer, DataCity>();
 		this.panel = panel;
 		this.cell = cell;
-		this.readerSdf25k = new ReaderSdf25k(storage);
 		this.statusbar = statusbar;
-		this.prefecture = new KsjPrefecture[47];
+		this.prefecture = new PrefectureCollection[47];
 
 		this.railway = this.ksjMgr.getRailwayCollection();
 		this.prefecture[0] = this.ksjMgr.getPrefectureData(1);
@@ -100,60 +86,11 @@ public class MapDataManager extends Thread {
 	 * @param codes 都道府県番号
 	 */
 	public synchronized void dumpPrefecture(Set<Integer> codes) {
-		synchronized (this.mapCity) {
-			/*
-			Iterator<Map.Entry<Integer, DataCity>> itr = this.mapCity.entrySet().iterator();
-			while (itr.hasNext()) {
-				Map.Entry<Integer, DataCity> entry = itr.next();
-				int prefCode = entry.getKey() / 1000;
-				if (!codes.contains(prefCode)) {
-//					this.prefecture[prefCode - 1] = null;
-//					this.statusbar.startReading("DUMP "+ this.name[prefCode - 1]);
-					itr.remove();
-				}
-			}
-			*/
-		}
+//		for (Integer code : codes) {
+//			int prefCode = code / 1000;
+//			this.prefecture[prefCode - 1] = null;
+//		}
 		this.statusbar.finishReading();
-	}
-	
-	public DataCity[] getDataCity() {
-		synchronized (this.mapCity) {
-			return this.mapCity.values().toArray(new DataCity[]{});
-		}
-	}
-
-	/**
-	 * 指定した頂点番号の頂点を取得します。
-	 * @param id 頂点番号
-	 * @param isDetailRoad 詳細な道路区間データを取得する場合true
-	 * @return 頂点
-	 * @throws IOException 頂点を取得できなかった場合
-	 */
-	public Node getNode(long id) {
-		Node ret = null;
-		return ret;
-	}
-	
-	public Collection<Node> getNodes(int code) {
-		return null;
-	}
-
-	/**
-	 * とりあえず行政代表点を求めます。
-	 * @param code 市区町村番号
-	 * @return 市区町村番号に対応した座標
-	 */
-	public Point getPoint(int code) {
-		Point point = null;
-		try {
-			point = this.readerSdf25k.readPoint(code);
-		} catch (Exception e) {
-			point = null;
-			Log.err(this, e);
-			Log.err(this, "code: "+ Integer.toString(code));
-		}
-		return point;
 	}
 	
 	public String getPrefecture(int i) {
@@ -169,7 +106,7 @@ public class MapDataManager extends Thread {
 		return this.prefecture[code - 1] != null;
 	}
 	
-	public KsjPrefecture[] getPrefectureDatas() {
+	public PrefectureCollection[] getPrefectureDatas() {
 		return this.prefecture;
 	}
 
@@ -193,35 +130,11 @@ public class MapDataManager extends Thread {
 	 * @param prefCode 都道府県番号
 	 * @throws IOException 入出力エラー
 	 */
-	private void readPrefecture(final int prefCode) throws IOException {
+	private void readPrefecture(final int prefCode) {
 		if (this.prefecture[prefCode - 1] == null) {
 			this.statusbar.startReading("READ PREF: " + this.name[prefCode - 1]);
-			final List<DataCity> list = new ArrayList<DataCity>();
-			
-			String format = DataCity.prefectureFormat(prefCode);
-			
-			Map<Integer, List<Polygon>> polygonMap = ReaderKsj.readSerializeKsj(format);
-			for (Map.Entry<Integer, List<Polygon>> entry : polygonMap.entrySet()) {
-				Integer code = entry.getKey();
-				DataCity city = new DataCity(code, entry.getValue().toArray(new Polygon[] {}));
-				list.add(city);
-				synchronized (this.mapCity) {
-					this.mapCity.put(code, city);
-				}
-			}
-//			this.prefecture[prefCode - 1] = ksjMgr.getPrefectureData(prefCode);
-
-			Thread thread = new Thread() {
-				@Override
-				public void run() {
-					for (DataCity city : list) {
-						city.setName(MapDataManager.this.db.get(city.getCode()));
-					}
-					MapDataManager.this.panel.repaint();
-				}
-			};
-			thread.setPriority(1);
-			thread.start();
+			this.prefecture[prefCode - 1] = ksjMgr.getPrefectureData(prefCode);
+			this.panel.repaint();
 			this.statusbar.finishReading();
 		}
 	}
@@ -279,10 +192,6 @@ public class MapDataManager extends Thread {
 
 	public void searchedFinished() {
 		this.panel.repaint();
-	}
-
-	public void set(RouteNavigation navi) {
-		this.statusbar.set(navi);
 	}
 
 	public void wakeup() {

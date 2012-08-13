@@ -3,13 +3,10 @@ package database;
 import java.awt.Polygon;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Observable;
@@ -69,20 +66,10 @@ public class FileDatabase extends Observable {
 
 		this.cityFormat = new DecimalFormat("00000");
 		
-		File dirSdf25k = new File(cacheDir + "sdf25k");
-		File dirSdf2500 = new File(cacheDir + "sdf2500");
 		File dirKsj = new File(cacheDir + "ksj");
 		File dirSerializable = new File(cacheDir + "serialize");
 		this.SERIALIZE_DIR = dirSerializable.getCanonicalPath() + File.separatorChar;
 		
-		Log.out(this, "init Cache Directory "+ dirSdf25k.getCanonicalPath());
-		if(!dirSdf25k.isDirectory()) {
-			dirSdf25k.mkdirs();
-		}
-		Log.out(this, "init Cache Directory "+ dirSdf2500.getCanonicalPath());
-		if(!dirSdf2500.isDirectory()) {
-			dirSdf2500.mkdirs();
-		}
 		Log.out(this, "init Cache Directory "+ dirKsj.getCanonicalPath());
 		if(!dirKsj.isDirectory()) {
 			dirKsj.mkdirs();
@@ -134,7 +121,7 @@ public class FileDatabase extends Observable {
 	 * @return 都道府県データ
 	 */
 	public Polygon[][] getPrefecturePolygon() {
-		return (Polygon[][]) this.readSerializableArchive(FileDatabase.prefPolygon);
+		return readSerializableArchive(FileDatabase.prefPolygon, Polygon[][].class);
 	}
 
 	/**
@@ -142,27 +129,23 @@ public class FileDatabase extends Observable {
 	 * @return 世界地図データ
 	 */
 	public Polygon[][] getWorldPolygon() {
-		return (Polygon[][]) this.readSerializableArchive(FileDatabase.worldPolygon);
-	}
-	
-	private String getSerializablePath(String path) {
-		return this.SERIALIZE_DIR + path;
+		return readSerializableArchive(FileDatabase.worldPolygon, Polygon[][].class);
 	}
 	
 	/**
 	 * 直列化されたメッシュ標高を読み込みます。
 	 * synchronizedは経路探索処理と、地図データ表示のスレッドの衝突を防ぐため。
 	 * @param path パス
+	 * @param c タグ
 	 * @return メッシュ標高
 	 */
-	public Object readSerializableArchive(String path) {
-		Log.out(this, "read Serialize "+ path);
-		Object obj = null;
+	public static <T> T readSerializableArchive(String path, Class<T> c) {
+		T obj = null;
 		try {
 			ObjectInputStream in = null;
 			try {
 				in = new ObjectInputStream(System.class.getResourceAsStream(path));
-				obj = in.readObject();
+				obj = c.cast(in.readObject());
 			} finally {
 				if (in != null) {
 					in.close();
@@ -170,80 +153,7 @@ public class FileDatabase extends Observable {
 			}
 		} catch (Exception e) {
 			obj = null;
-			Log.err(this, e);
 		}
 		return obj;
-	}
-
-	/**
-	 * 直列化されたメッシュ標高を読み込みます。
-	 * synchronizedは経路探索処理と、地図データ表示のスレッドの衝突を防ぐため。
-	 * @param path パス
-	 * @return メッシュ標高
-	 */
-	public Object readSerializable(String path) {
-		Object obj = null;
-		File file = new File(this.getSerializablePath(path));
-		if (file.isFile()) {
-			try {
-				Log.out(this, "read Serialize "+ file.getCanonicalPath());
-				ObjectInputStream in = null;
-				try {
-					in = new ObjectInputStream(new FileInputStream(file));
-					obj = in.readObject();
-				} finally {
-					if (in != null) {
-						in.close();
-					}
-				}
-			} catch (Throwable e) {
-				Log.err(this, e);
-				if (!file.delete()) {
-					Log.err(this, "failure delete: "+ file);
-				}
-				obj = null;
-			}
-		}
-		return obj;
-	}
-
-	/**
-	 * オブジェクトを直列化して保存します。
-	 * 衝突を避けるため一度.tmpファイルに保存して後にリネームします。
-	 * @param path パス
-	 * @param obj 直列化可能なオブジェクト
-	 */
-	public void writeSerializable(String path, Object obj) {
-		String key = this.getSerializablePath(path);
-		Log.out(this, "save "+ key);
-		File file = new File(key + ".tmp");
-		if (!file.getParentFile().isDirectory()) {
-			if (!file.getParentFile().mkdirs()) {
-				Log.err(this, "mkdir failure: "+ file.getParent());
-			}
-		}
-		try {
-			ObjectOutputStream out = null;
-			try {
-				out = new ObjectOutputStream(new FileOutputStream(file));
-				out.writeObject(obj);
-				out.flush();
-			} finally {
-				if (out != null) {
-					out.close();
-				}
-			}
-			if (!file.renameTo(new File(key))) {
-				Log.err(this, "rename failure: "+ key);
-				if (!file.delete()) {
-					Log.err(this, "delete failure: "+ file);
-				}
-			}
-		} catch (Exception e) {
-			Log.err(this, e);
-			if (file.exists()) {
-				file.delete();
-			}
-		}
 	}
 }

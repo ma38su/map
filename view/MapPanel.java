@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-
 import util.FixedPoint;
 import util.gui.ExportableComponent;
 
@@ -30,9 +29,10 @@ import map.MapDataManager;
 import map.Curve;
 import map.ksj.BusCollection;
 import map.ksj.BusRoute;
+import map.ksj.CityAreas;
 import map.ksj.GmlCurve;
 import map.ksj.GmlPolygon;
-import map.ksj.KsjPrefecture;
+import map.ksj.PrefectureCollection;
 import map.ksj.RailroadSection;
 import map.ksj.RailwayCollection;
 import map.ksj.Station;
@@ -68,7 +68,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 	/**
 	 * 駅のフォント
 	 */
-	private static final Font FONT_STATION = new Font(MapPanel.FONT_FAMILY, Font.BOLD, 14);
+	private static final Font FONT_STATION = new Font(MapPanel.FONT_FAMILY, Font.BOLD, 11);
 	
 	/**
 	 * 市区町村名表示フォントの最大サイズ
@@ -102,17 +102,18 @@ public class MapPanel extends ExportableComponent implements Printable {
 
 	private static final int MAX_SCREEN_X = 154 * FixedPoint.SHIFT;
 
-	private static final int MAX_SCREEN_Y = 46  * FixedPoint.SHIFT;
+	private static final int MAX_SCREEN_Y =  46 * FixedPoint.SHIFT;
 	
 	private static final int MIN_SCREEN_X = 122 * FixedPoint.SHIFT;
 	
-	private static final int MIN_SCREEN_Y = 20  * FixedPoint.SHIFT;
+	private static final int MIN_SCREEN_Y =  20 * FixedPoint.SHIFT;
 	
 	/**
 	 * この倍率以下で国土数値情報の都道府県界を表示します。
 	 */
 	private static final float MODE_PREF_SCALE  = 0.00010f;
-	// private static final float MODE_PREF_SCALE  = 0.00025f;
+	
+	private static final float MODE_BUS_SCALE  = 0.00050f;
 
 	/**
 	 * この倍率以下でFreeGISを表示します。
@@ -133,16 +134,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * 表示倍率の変更精度
 	 */
 	private static final float SCALE_SENSE = 0.08f;
-
-	/**
-	 * 道路区間，鉄道区間の描画の基本の幅
-	 */
-	private static final int STROKE_WIDTH = 75;
-
-	/**
-	 * 市区町村境界のストローク
-	 */
-	private final Stroke border;
 
 	/**
 	 * ポリゴン描画のためのキャッシュ
@@ -204,16 +195,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	private Color COLOR_ROAD_BORDER;
 
 	/**
-	 * 一般道のルート色
-	 */
-	private Color COLOR_ROUTE;
-
-	/**
-	 * 高速道路のルート色
-	 */
-	private Color COLOR_ROUTE_HIGHWAY;
-	
-	/**
 	 * 水域を塗りつぶす色
 	 */
 	private Color COLOR_SEA;
@@ -255,11 +236,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	private Polygon[] island;
 
 	/**
-	 * メッシュ表示のフラグ
-	 */
-	private boolean isMesh;
-	
-	/**
 	 * マウス操作のフラグ
 	 */
 	private boolean isOperation;
@@ -282,7 +258,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 	/**
 	 * 道路の表示
 	 */
-	private boolean isRoadway;
+	private boolean isBusVisible;
 
 	/**
 	 * ラベルの影の表示有無
@@ -346,14 +322,12 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * 地図パネル
 	 */
 	public MapPanel() {
-		this.isLabelShadowVisible = true;
+		this.isLabelShadowVisible = false;
 		this.isTextAntialiasing = false;
-		this.border = new BasicStroke(0.5f);
 		this.isAxis = true;
 		this.isRailwayVisible = true;
-		this.isMesh = true;
 		this.isRiver = true;
-		this.isRoadway = true;
+		this.isBusVisible = true;
 		this.screen = new Rectangle();
 		this.labeling = new SimpleLabeling(this.screen);
 		this.isHighway = true;
@@ -364,7 +338,8 @@ public class MapPanel extends ExportableComponent implements Printable {
 	private static final String[] MODE_LABEL = {
 		"MODE: 世界地図",
 		"MODE: 国土数値情報（都道府県）",
-		"MODE: 国土数値情報（都道府県＋市区町村）",
+		"MODE: 国土数値情報（都道府県＋鉄道）",
+		"MODE: 国土数値情報（都道府県＋鉄道＋バス）",
 	};
 	
 	/**
@@ -373,17 +348,17 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 */
 	@Override
 	public void draw(Graphics2D g) {
+		
 		this.labeling.init(g, this.scale, this.getWidth(), this.getHeight(), this.isTextAntialiasing, this.isLabelShadowVisible, this.isLabelFailure);
 
 		Stroke defaultStroke = g.getStroke();
+
 		int mode = mode();
 		g.setFont(MapPanel.FONT_INFO);
+
 		this.labeling.set(MODE_LABEL[mode], 5, 2);
-		
 		this.labeling.set(String.format("SCALE: %.1fµ", (this.scale * 1000 * 1000)), 5, 17);
 
-		g.setColor(this.getBackground());
-		g.fillRect(0, 0, this.getWidth(), this.getHeight());
 		g.setColor(this.COLOR_SEA);
 		this.drawBackground(g);
 
@@ -404,32 +379,18 @@ public class MapPanel extends ExportableComponent implements Printable {
 			}
 		} else if (mode == 1) {
 
-			if ((this.isLabel & MapPanel.lABEL_PLACE_GOVT) != 0) {
-				for (int i = 0; i < this.prefectures.length; i++) {
-					this.fillPrefectures(g, this.maps.getPrefecture(i), this.prefectures[i]);
-				}
-				this.fillPolygon(g, this.lake, this.COLOR_SEA, this.COLOR_SEA_BORDER);
-				this.fillPolygon(g, this.island, this.COLOR_GROUND, this.COLOR_GROUND_BORDER);
-			} else {
-				for (int i = 0; i < this.prefectures.length; i++) {
-					this.fillPolygon(g, this.prefectures[i], this.COLOR_GROUND, this.COLOR_GROUND_BORDER);
-				}
-				this.fillPolygon(g, this.lake, this.COLOR_SEA, this.COLOR_SEA_BORDER);
-				this.fillPolygon(g, this.island, this.COLOR_GROUND, this.COLOR_GROUND_BORDER);
+			for (int i = 0; i < this.prefectures.length; i++) {
+				this.fillPrefectures(g, this.maps.getPrefecture(i), this.prefectures[i]);
 			}
-			if (!this.isOperation) {
-				if (this.isAntialiasing) {
-					g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-				}
+			this.fillPolygon(g, this.lake, this.COLOR_SEA, this.COLOR_SEA_BORDER);
+			this.fillPolygon(g, this.island, this.COLOR_GROUND, this.COLOR_GROUND_BORDER);
+			if (!this.isOperation && this.isAntialiasing) {
+				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			}
 		} else {
-			if (!this.isOperation) {
-				if (this.isAntialiasing) {
-					g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-				}
+			if (!this.isOperation && this.isAntialiasing) {
+				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			}
-
-			g.setTransform(new AffineTransform(scale, 0, 0, - scale, - scale * this.screen.x, this.screen.y * this.scale + this.getHeight()));
 
 			g.setColor(this.COLOR_GROUND);
 
@@ -446,62 +407,108 @@ public class MapPanel extends ExportableComponent implements Printable {
 				}
 			}
 
-			this.setCityFont(g);
-			g.setStroke(this.border);
-
-			/*
-			for (DataCity city : cities) {
-				this.drawBorder(g, city);
-			}*/
-
-			g.setColor(Color.BLACK);
 			g.setStroke(new BasicStroke(1f / this.scale));
-			for (KsjPrefecture data : this.maps.getPrefectureDatas()) {
+
+			for (PrefectureCollection data : this.maps.getPrefectureDatas()) {
 				if (data != null) {
-					BusCollection bus = data.getBusCollection();
-					for (BusRoute route : bus.getBusRoute()) {
-						route.draw(g);
+
+					g.setColor(COLOR_CITY_BORDER);
+					for (CityAreas areas : data.getAreas()) {
+						if (this.screen.intersects(areas.getBounds())) {
+							for (GmlPolygon polygon : areas.getPolygons()) {
+								if (this.screen.intersects(polygon.getBounds())) {
+									polygon.draw(g);
+								}
+							}
+						}
+					}
+				}
+			}
+			if (this.isBusVisible) {
+				for (PrefectureCollection data : this.maps.getPrefectureDatas()) {
+					if (data != null) {
+						g.setColor(COLOR_ROAD);
+						BusCollection bus = data.getBusCollection();
+						for (BusRoute route : bus.getBusRoute()) {
+							route.draw(g);
+						}
 					}
 				}
 			}
 			
-			RailwayCollection railway = this.maps.getRailwayCollection();
-			
-			float w1 = 4 / this.scale;
-			float w2 = 2 / this.scale;
-			float w3 = 6 / this.scale;
+			if (this.isRailwayVisible) {
 
-			g.setStroke(new BasicStroke(w1, this.STROKE_CAP, this.STROKE_JOIN));
-			g.setColor(Color.BLACK);
-			for (RailroadSection rail : railway.getRailroadSection()) {
-				rail.draw(g);
+				RailwayCollection railway = this.maps.getRailwayCollection();
+				
+				float w1 = 3 / this.scale;
+				float w2 = 2 / this.scale;
+
+				float w3 = 7 / this.scale;
+				float w4 = 5 / this.scale;
+
+				g.setStroke(new BasicStroke(w1, this.STROKE_CAP, this.STROKE_JOIN));
+				g.setColor(COLOR_RAILBASE);
+				
+				for (RailroadSection rail : railway.getRailroadSection()) {
+					if (this.screen.intersects(rail.getBounds())) {
+						rail.draw(g);
+					}
+				}
+
+				g.setColor(Color.WHITE);
+				g.setStroke(new BasicStroke(w2, this.STROKE_CAP, this.STROKE_JOIN, 10f, new float[]{w2 * 6, w2 * 6}, 0));
+
+				for (RailroadSection rail : railway.getRailroadSection()) {
+					if (this.screen.intersects(rail.getBounds())) {
+						rail.draw(g);
+					}
+				}
+
+				g.setColor(this.COLOR_STATION_BORDER);
+				g.setStroke(new BasicStroke(w3, this.STROKE_CAP, this.STROKE_JOIN));
+				for (Station station : railway.getStations()) {
+					if (this.screen.intersects(station.getBounds())) {
+						station.draw(g);
+					}
+				}
+
+				g.setColor(this.COLOR_STATION);
+				g.setStroke(new BasicStroke(w4, this.STROKE_CAP, this.STROKE_JOIN));
+				for (Station station : railway.getStations()) {
+					if (this.screen.intersects(station.getBounds())) {
+						station.draw(g);
+					}
+				}
+
 			}
-
-			g.setColor(Color.WHITE);
-			g.setStroke(new BasicStroke(w2, this.STROKE_CAP, this.STROKE_JOIN, 10f, new float[]{w2 * 6, w2 * 6}, 0));
-			for (RailroadSection rail : railway.getRailroadSection()) {
-				rail.draw(g);
-			}
-
-			g.setColor(this.COLOR_OTHER_RAIL);
-			g.setStroke(new BasicStroke(w3, this.STROKE_CAP, this.STROKE_JOIN));
-			for (Station station : railway.getStations()) {
-				station.draw(g);
-			}
-
 			g.setStroke(defaultStroke);
 			g.setTransform(new AffineTransform());
+			
+			this.setCityFont(g);
+			for (PrefectureCollection data : this.maps.getPrefectureDatas()) {
+				if (data != null) {
+					this.labeling.add(data.getAreas());
+				}
+			}
 
-			this.labeling.add(railway.getStations());
+			if (this.isRailwayVisible) {
+				g.setFont(FONT_STATION);
+				RailwayCollection railway = this.maps.getRailwayCollection();
+				this.labeling.add(railway.getStations());
+			}
+		}
+		g.setTransform(new AffineTransform());
+		g.setStroke(defaultStroke);
 
-			for (KsjPrefecture data : this.maps.getPrefectureDatas()) {
+		if (mode > 2) {
+			for (PrefectureCollection data : this.maps.getPrefectureDatas()) {
 				if (data != null) {
 					BusCollection bus = data.getBusCollection();
+
 					this.labeling.add(bus.getBusStops());
 				}
 			}
 		}
-		g.setTransform(new AffineTransform());
 
 		this.drawRuler(g);
 
@@ -567,66 +574,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		g.fillRect(0, sy, this.getWidth(), (ey - sy));
 	}
 
-	/**
-	 * 市区町村の行政界と市区町村名を描画します。
-	 * 塗りつぶしは行いません。
-	 * @param g 描画するGraphics2D
-	 * @param city 描画する行政界
-	 */
-	private void drawBorder(Graphics2D g, DataCity city) {
-		Polygon[] polygons = city.getPolygon();
-		if (polygons != null) {
-			g.setColor(this.COLOR_GROUND_BORDER);
-			for (Polygon polygon : polygons) {
-				if(polygon.intersects(this.screen)) {
-					int[] aryX = polygon.xpoints;
-					int[] aryY = polygon.ypoints;
-
-					for (int j = 0; j < polygon.npoints; j++) {
-						this.cacheX[j] = (int)((aryX[j] - this.screen.x) * this.scale);
-						this.cacheY[j] = this.getHeight() - (int)((aryY[j] - this.screen.y) * this.scale);
-					}
-					g.drawPolygon(this.cacheX, this.cacheY, polygon.npoints);
-				}
-			}
-			g.setColor(Color.BLACK);
-			String name = city.getName();
-			if (name != null && (this.isLabel & MapPanel.lABEL_PLACE_GOVT) != 0) {
-				int x = (int) ((city.getX() - this.screen.x) * this.scale);
-				int y = this.getHeight() - (int) ((city.getY() - this.screen.y) * this.scale);
-				this.labeling.add(name, x, y, true);
-			}
-		}
-	}
-
-	/**
-	 * 曲線の描画
-	 * 
-	 * @param g 描画するGraphics
-	 * @param curves 描画する行政界
-	 */
-	private void drawCurve(Graphics2D g, final GmlCurve[] curves) {
-		for (final GmlCurve curve : curves) {
-			final int[] aryX = curve.getArrayX();
-			final int[] aryY = curve.getArrayY();
-			
-			int length = curve.getArrayLength();
-			int x0 = aryX[0];
-			int y0 = aryY[0];
-			for (int i = 1; i < length; i++) {
-				int x = aryX[i];
-				int y = aryY[i];
-
-				// 表示領域内
-				if (this.screen.intersectsLine(x0, y0, x, y)) {
-					g.drawLine(x0, y0, x, y);
-				}
-				x0 = x;
-				y0 = y;
-			}
-		}
-	}
-	
 	public void drawLabeling(Graphics2D g, DataCity[] data) {
 		g.setFont(MapPanel.FONT_LABEL);
 		synchronized (this.maps) {
@@ -639,31 +586,15 @@ public class MapPanel extends ExportableComponent implements Printable {
 		}
 	}
 	
-	/**
-	 * 線分を描画します。
-	 * @param g 描画するGraphics2D
-	 * @param x1 始点のX座標
-	 * @param y1 始点のY座標
-	 * @param x2 終点のX座標
-	 * @param y2 終点のY座標
-	 * @param line 境界色
-	 */
-	public void drawLine(Graphics2D g, int x1, int y1, int x2, int y2) {
-		int tx1 = (int)((x1 - this.screen.x) * this.scale);
-		int ty1 = this.getHeight() - (int)((y1 - this.screen.y) * this.scale);
-		int tx2 = (int)((x2 - this.screen.x) * this.scale);
-		int ty2 = this.getHeight() - (int)((y2 - this.screen.y) * this.scale);
-		g.drawLine(tx1, ty1, tx2, ty2);
-	}
-
-	public void drawOval(Graphics2D g, Point[] points, int r) {
+	private void drawOval(Graphics2D g, Point[] points, int r) {
 		for (Point p : points) {
 			int x = (int) ((p.getX() - this.screen.x) * this.scale) - r;
 			int y = this.getHeight() - (int) ((p.getY() - this.screen.y) * this.scale) - r;
+			int r2 = r * 2;
 			g.setColor(this.COLOR_STATION);
-			g.fillOval(x, y, r * 2, r * 2);
+			g.fillOval(x, y, r2, r2);
 			g.setColor(this.COLOR_STATION_BORDER);
-			g.drawOval(x, y, r * 2, r * 2);
+			g.drawOval(x, y, r2, r2);
 		}
 	}
 
@@ -690,55 +621,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		}
 	}
 
-	/**
-	 * 折れ線を描画します。
-	 * @param g 
-	 * @param curves 曲線
-	 */
-	void drawPolyline(Graphics2D g, Curve[] curves) {
-		if (curves != null) {
-			for (Curve curve : curves) {
-				int[] aryX = curve.getArrayX();
-				int[] aryY = curve.getArrayY();
-				for (int i = 0; i < aryX.length; i++) {
-					this.cacheX[i] = (int) ((aryX[i] - this.screen.x) * this.scale);
-					this.cacheY[i] = this.getHeight() - (int) ((aryY[i] - this.screen.y) * this.scale);
-				}
-				g.drawPolyline(this.cacheX, this.cacheY, aryX.length);
-			}
-		}
-	}
-
-	/**
-	 * 折れ線の描画をおこないます。
-	 * @param g
-	 * @param listX
-	 * @param listY
-	 * @param color
-	 * @param stroke
-	 */
-	private void drawPolyLine(Graphics2D g, List<int[]> listX, List<int[]> listY) {
-		for (int i = 0; i < listX.size(); i++) {
-			int[] aryX = listX.get(i);
-			g.drawPolyline(aryX, listY.get(i), aryX.length);
-		}
-	}
-
-	/**
-	 * Rectangleを描画します。
-	 * @param g 描画するGraphics2D
-	 * @param rect 描画するRectangle
-	 * @param polygons 描画するポリゴン
-	 * @param bg 背景色
-	 * @param line 境界色
-	 */
-	void drawRectangle(Graphics2D g, Rectangle rect) {
-		int rectX = (int)((rect.x - this.screen.x) * this.scale);
-		float height = rect.height * this.scale;
-		int rectY = this.getHeight() - (int)((rect.y - this.screen.y) * this.scale + height);
-		g.drawRect(rectX, rectY, (int)(rect.width * this.scale), (int) (height));
-	}
-	
 	public void drawRuler(Graphics2D g) {
 		g.setColor(Color.BLACK);
 		int width = 100;
@@ -876,19 +758,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * ポリゴンを描画します。
 	 * @param g 描画するGraphics2D
 	 * @param polygons 描画するポリゴン
-	 */
-	private void fillPolygon(Graphics2D g, GmlPolygon[] polygons) {
-		for (GmlPolygon polygon : polygons) {
-			if (this.screen.intersects(polygon.getBounds())) {
-				polygon.fill(g);
-			}
-		}
-	}
-
-	/**
-	 * ポリゴンを描画します。
-	 * @param g 描画するGraphics2D
-	 * @param polygons 描画するポリゴン
 	 * @param bg 背景色
 	 * @param line 境界色
 	 */
@@ -920,59 +789,17 @@ public class MapPanel extends ExportableComponent implements Printable {
 		if (polygons == null) {
 			return;
 		}
-		for (int i = 0; i < polygons.length; i++) {
-			if(polygons[i].intersects(this.screen)) {
-				
-				g.fillPolygon(polygons[i]);
-				/*
-				int[] aryX = polygons[i].xpoints;
-				int[] aryY = polygons[i].ypoints;
-								
-				for (int j = 0; j < polygons[i].npoints; j++) {
-					this.cacheX[j] = (int)((aryX[j] - this.screen.x) * this.scale);
-					this.cacheY[j] = this.getHeight() - (int)((aryY[j] - this.screen.y) * this.scale);
-				}
-				Polygon p = new Polygon(this.cacheX, this.cacheY, polygons[i].npoints);
-				g.fillPolygon(p);
-				this.cachePolygon.add(p);
-		 		*/
+		for (Polygon polygon : polygons) {
+			if(polygon.intersects(this.screen)) {
+				g.fillPolygon(polygon);
 			}
 		}
-		/*
-		if (!this.WORLD_SCREEN.contains(this.screen)) {
-			if (this.WORLD_SCREEN_EAST.intersects(this.screen)) {
-				Rectangle screen = new Rectangle(this.screen);
-				screen.x -= this.WORLD_SCREEN.width;
-				long screenX = 1296000000 - this.screen.x;
-				for (Polygon polygon : polygons) {
-					if(polygon.intersects(screen)) {
-						int[] aryX = polygon.xpoints;
-						int[] aryY = polygon.ypoints;
-						for (int j = 0; j < polygon.npoints; j++) {
-							float x = (aryX[j] + screenX) * this.scale;
-							this.cacheX[j] = (x >= Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) x;
-							this.cacheY[j] = this.getHeight() - (int)((aryY[j] - this.screen.y) * this.scale);
-						}
-						Polygon p = new Polygon(this.cacheX, this.cacheY, polygon.npoints);
-						g.fillPolygon(p);
-						this.cachePolygon.add(p);
-					}
-				}
-			}
-		}
-		*/
 		g.setColor(this.COLOR_GROUND_BORDER);
-		for (int i = 0; i < polygons.length; i++) {
-			if(polygons[i].intersects(this.screen)) {
-				
-				g.drawPolygon(polygons[i]);
+		for (Polygon polygon : polygons) {
+			if(polygon.intersects(this.screen)) {
+				g.drawPolygon(polygon);
 			}
 		}
-		/*
-		for (Polygon p : this.cachePolygon) {
-			g.drawPolygon(p);
-		}
-		*/
 		this.cachePolygon.clear();
 	}
 
@@ -1068,9 +895,11 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * @return 地図の表示状態
 	 */
 	public int mode() {
-		if (this.scale > MapPanel.MODE_PREF_SCALE) {
+		if (Double.compare(this.scale, MapPanel.MODE_BUS_SCALE) > 0) {
+			return 3;
+		} else if (Double.compare(this.scale, MapPanel.MODE_PREF_SCALE) > 0) {
 			return 2;
-		} else if (this.scale > MapPanel.MODE_WORLD_SCALE) {
+		} else if (Double.compare(this.scale, MapPanel.MODE_WORLD_SCALE) > 0) {
 			return 1;
 		} else {
 			return 0;
@@ -1111,7 +940,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 			this.isRepaint = false;
 			this.offs = this.createImage(this.getWidth(), this.getHeight());
 			Graphics2D offg = (Graphics2D) this.offs.getGraphics();
-			super.paintComponent(offg);
 			// オフスクリーンバッファ
 			offg.setFont(new Font(MapPanel.FONT_FAMILY, Font.PLAIN, 20));
 			String msg = "Now Loading...";
@@ -1167,22 +995,21 @@ public class MapPanel extends ExportableComponent implements Printable {
 	
 	public void setDefaultStyle() {
 		this.COLOR_CITY_BORDER = new Color(161, 159, 156);
-		this.COLOR_GROUND = new Color(242, 239, 233);
+//		this.COLOR_GROUND = new Color(242, 239, 233);
+		this.COLOR_GROUND = new Color(128, 128, 128);
 		this.COLOR_GROUND_BORDER = new Color(128, 128, 128);
 		this.COLOR_HIGHWAY = new Color(150, 163, 230);
 		this.COLOR_HIGHWAY_BORDER = new Color(104, 118, 190);
 		this.COLOR_MAINROAD = new Color(255, 247, 165);
 		this.COLOR_MAINROAD_BORDER = new Color(175, 163, 143);
 		this.COLOR_OTHER_RAIL = new Color(110, 110, 110);
-		this.COLOR_ROUTE = Color.YELLOW;
-		this.COLOR_ROUTE_HIGHWAY = Color.RED;
 		this.COLOR_SEA = new Color(153, 179, 204);
 		this.COLOR_SEA_BORDER = this.COLOR_SEA.darker();
 		this.COLOR_STATION = new Color(242, 133, 133);
 		this.COLOR_STATION_BORDER = new Color(169, 93, 93);
 		this.COLOR_ROAD = Color.WHITE;
 		this.COLOR_ROAD_BORDER = Color.LIGHT_GRAY;
-		this.COLOR_RAILBASE = Color.LIGHT_GRAY;
+		this.COLOR_RAILBASE = Color.BLACK;
 	}
 
 	/**
@@ -1234,8 +1061,12 @@ public class MapPanel extends ExportableComponent implements Printable {
 		}
 	}
 	
-	public void switchAxis() {
-		this.isAxis = !this.isAxis;
+	public void setAxisVisible(boolean flag) {
+		this.isAxis = flag;
+	}
+	
+	public boolean isAxisVisible() {
+		return this.isAxis;
 	}
 
 	/**
@@ -1245,27 +1076,8 @@ public class MapPanel extends ExportableComponent implements Printable {
 		this.isHighway = !this.isHighway;
 	}
 
-	/**
-	 * ラベル表示を切り替える
-	 * @param n 
-	 */
-	public void switchLabel(int n) {
-		if ((this.isLabel & n) == 0) {
-			this.isLabel += n;
-		} else {
-			this.isLabel -= n;
-		}
-	}
-
 	public void switchLabelFailure() {
 		this.isLabelFailure = !this.isLabelFailure;
-	}
-
-	/**
-	 * メッシュの表示を切り替えます。
-	 */
-	public void switchMesh() {
-		this.isMesh = !this.isMesh;
 	}
 
 	/**
@@ -1296,12 +1108,19 @@ public class MapPanel extends ExportableComponent implements Printable {
 	public void switchRiver() {
 		this.isRiver = !this.isRiver;
 	}
+
+	/**
+	 * @param flag バスの表示有無
+	 */
+	public void setBusVisible(boolean flag) {
+		this.isBusVisible = flag;
+	}
 	
 	/**
-	 * 道路表示を切り替えます。
+	 * @return バスの表示有無
 	 */
-	public void switchRoadway() {
-		this.isRoadway = !this.isRoadway;
+	public boolean isBusVisible() {
+		return this.isBusVisible;
 	}
 
 	public boolean isLabelShadowVisible() {

@@ -71,14 +71,24 @@ public class MapMenu extends JMenuBar {
 		
 		itemViewLabel.addSeparator();
 	
-		final JCheckBoxMenuItem menuViewLabelTextAntialiasing = new JCheckBoxMenuItem("テキストアンチエイリアス", true);
-		menuViewLabelTextAntialiasing.addActionListener(control);
-		menuViewLabelTextAntialiasing.setActionCommand("label_antialiasing");
+		final JCheckBoxMenuItem menuViewLabelTextAntialiasing = new JCheckBoxMenuItem("テキストアンチエイリアス", panel.isTextAntialiasing());
+		menuViewLabelTextAntialiasing.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setTextAntialiasing(menuViewLabelTextAntialiasing.isSelected());
+				panel.repaint();
+			}
+		});
 		itemViewLabel.add(menuViewLabelTextAntialiasing);
 		
-		final JCheckBoxMenuItem menuViewLabelTextShadow = new JCheckBoxMenuItem("ラベルに影をつける", true);
-		menuViewLabelTextShadow.addActionListener(control);
-		menuViewLabelTextShadow.setActionCommand("label_shadow");
+		final JCheckBoxMenuItem menuViewLabelTextShadow = new JCheckBoxMenuItem("ラベルに影をつける", panel.isLabelShadowVisible());
+		menuViewLabelTextShadow.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setLabelShadowVisible(menuViewLabelTextShadow.isSelected());
+				panel.repaint();
+			}
+		});
 		itemViewLabel.add(menuViewLabelTextShadow);
 
 		itemViewLabel.addSeparator();
@@ -100,30 +110,25 @@ public class MapMenu extends JMenuBar {
 		});
 		menuView.add(menuViewRailway);
 
-		JCheckBoxMenuItem item2_4 = new JCheckBoxMenuItem("高速道路表示", true);
-		item2_4.setActionCommand("show_highway");
-		item2_4.addActionListener(control);
-		menuView.add(item2_4);
+		final JCheckBoxMenuItem menuViewBusVisible = new JCheckBoxMenuItem("バス表示", panel.isBusVisible());
+		menuViewBusVisible.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setBusVisible(menuViewBusVisible.isSelected());
+				panel.repaint();
+			}
+		});
+		menuView.add(menuViewBusVisible);
 
-		JCheckBoxMenuItem item2_5 = new JCheckBoxMenuItem("一般道表示", true);
-		item2_5.setActionCommand("show_roadway");
-		item2_5.addActionListener(control);
-		menuView.add(item2_5);
-		
-		JCheckBoxMenuItem item2_7 = new JCheckBoxMenuItem("河川表示", true);
-		item2_7.setActionCommand("show_river");
-		item2_7.addActionListener(control);
-		menuView.add(item2_7);
-		
-		JCheckBoxMenuItem item2_8 = new JCheckBoxMenuItem("標高メッシュ表示", true);
-		item2_8.setActionCommand("show_mesh");
-		item2_8.addActionListener(control);
-		menuView.add(item2_8);
-
-		JCheckBoxMenuItem item2_9 = new JCheckBoxMenuItem("経度・緯度の表示", true);
-		item2_9.setActionCommand("show_axis");
-		item2_9.addActionListener(control);
-		menuView.add(item2_9);
+		final JCheckBoxMenuItem menuViewAxisVisible = new JCheckBoxMenuItem("経度・緯度の表示", panel.isAxisVisible());
+		menuViewAxisVisible.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setAxisVisible(menuViewAxisVisible.isSelected());
+				panel.repaint();
+			}
+		});
+		menuView.add(menuViewAxisVisible);
 
 		menuView.addSeparator();
 		

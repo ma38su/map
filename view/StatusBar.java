@@ -2,8 +2,6 @@ package view;
 
 import javax.swing.JLabel;
 
-import map.route.RouteNavigation;
-
 import jp.sourceforge.ma38su.util.Log;
 
 /**
@@ -43,11 +41,6 @@ public class StatusBar extends JLabel implements Runnable {
 	private String content;
 
 	/**
-	 * 経路探索を行うスレッド
-	 */
-	private RouteNavigation navi;
-
-	/**
 	 * ステータスバーの更新のためのスレッド
 	 */
 	private Thread thread;
@@ -81,9 +74,6 @@ public class StatusBar extends JLabel implements Runnable {
 		boolean flag = false;
 		StringBuilder sb = new StringBuilder();
 		sb.append("MEMORY : " + this.memory + "MB");
-		if (this.navi != null) {
-			sb.append(this.navi);
-		}
 		if (this.content != null) {
 			/* ダウンロードしているファイルと読み込んでいるファイルが異なる場合 */
 			flag = true;
@@ -123,14 +113,6 @@ public class StatusBar extends JLabel implements Runnable {
 					.getRuntime().freeMemory()) / 1024) / 1024;
 			this.loop();
 		}
-	}
-
-	/**
-	 * 経路探索のためのスレッドを設定します。
-	 * @param navi 経路探索のスレッド
-	 */
-	public void set(RouteNavigation navi) {
-		this.navi = navi;
 	}
 
 	/**

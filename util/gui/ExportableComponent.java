@@ -1,7 +1,8 @@
-package jp.sourceforge.ma38su.gui;
+package util.gui;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 
@@ -33,6 +34,15 @@ public abstract class ExportableComponent extends JComponent implements Printabl
 		}
 	}
 	
+	@Override
+	protected void paintComponent(Graphics g) {
+		Image offs = this.createImage(this.getWidth(), this.getHeight());
+		Graphics2D offg = (Graphics2D) offs.getGraphics();
+		super.paintComponent(offg);
+		this.draw(offg);
+		g.drawImage(offs, 0, 0, null);
+	}
+
 	/**
 	 * 変換して描画します。
 	 * @param g 

@@ -3,7 +3,6 @@ package database;
 import java.awt.Polygon;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,20 +10,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Observable;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
-import jp.sourceforge.ma38su.util.DLFile;
-import jp.sourceforge.ma38su.util.GeneralFileFilter;
 import jp.sourceforge.ma38su.util.Log;
 
 /**
@@ -32,11 +22,6 @@ import jp.sourceforge.ma38su.util.Log;
  * @author ma38su
  */
 public class FileDatabase extends Observable {
-
-	/**
-	 * 国土数値情報のベースとなるURL
-	 */
-	private static final String KSJ_URL = "http://nlftp.mlit.go.jp/ksj/dls/data/";
 
 	/**
 	 * 都道府県データの相対位置リスト
@@ -62,11 +47,6 @@ public class FileDatabase extends Observable {
 	 */
 	private static final String worldPolygon = "/.data/freegis.dat";
 
-	/**
-	 * 保存フォルダ
-	 */
-	private final String CACHE_DIR;
-
 	private final NumberFormat cityFormat;
 
 	/**
@@ -74,8 +54,6 @@ public class FileDatabase extends Observable {
 	 */
 	private final String[] prefecture;
 
-	private final NumberFormat prefFormat;
-	
 	/**
 	 * 直列化したファイルの保存先ディレクトリ
 	 */
@@ -88,10 +66,8 @@ public class FileDatabase extends Observable {
 	 * @throws IOException 入出力エラー
 	 */
 	public FileDatabase(String cacheDir) throws IOException {
-		this.CACHE_DIR = cacheDir;
 
 		this.cityFormat = new DecimalFormat("00000");
-		this.prefFormat = new DecimalFormat("00");
 		
 		File dirSdf25k = new File(cacheDir + "sdf25k");
 		File dirSdf2500 = new File(cacheDir + "sdf2500");
@@ -143,132 +119,6 @@ public class FileDatabase extends Observable {
 	protected synchronized void clearChanged() {
 	}
 	
-
-	/**
-	 * ファイルのコピーを行います。
-	 * 入出力のストリームは閉じないので注意が必要です。
-	 * 
-	 * @param in 入力ストリーム
-	 * @param out 出力ストリーム
-	 * @throws IOException 入出力エラー
-	 */
-	private void copy(InputStream in, OutputStream out) throws IOException {
-		final byte buf[] = new byte[1024];
-		int size;
-		while ((size = in.read(buf)) != -1) {
-			out.write(buf, 0, size);
-			out.flush();
-		}
-	}
-
-	/**
-	 * ファイルをダウンロードします。
-	 * @param url URL
-	 * @param file ダウンロード先のファイル
-	 * @return ダウンロードできればtrue
-	 * @throws IOException 入出力エラー
-	 */
-	private boolean download(URL url, DLFile file) throws IOException {
-		boolean ret = true;
-		InputStream in = null;
-		OutputStream out = null;
-		try {
-			URLConnection connect = url.openConnection();
-			// ファイルのチェック（ファイルサイズの確認）
-			int contentLength = connect.getContentLength();
-			if (contentLength != file.length()) {
-				if (!file.getParentFile().isDirectory()) {
-					file.getParentFile().mkdirs();
-				}
-
-				file.setContentLength(contentLength);
-				file.setState(DLFile.STATE_DOWNLOAD);
-				this.notifyObservers(file);
-
-				final long start = System.currentTimeMillis();
-				// ダウンロード
-				in = connect.getInputStream();
-				out = new FileOutputStream(file);
-				this.copy(in, out);
-				Log.out(this, "download "+ url + " / " + (System.currentTimeMillis() - start) + "ms");
-				
-				file.setState(DLFile.STATE_FINISH);
-				this.notifyObservers(file);
-			}
-		} catch (Exception e) {
-			ret = false;
-		} finally {
-			if(in != null) {
-				in.close();
-			}
-			if(out != null) {
-				out.close();
-			}
-		}
-		return ret;
-	}
-
-	/**
-	 * 圧縮ファイルを展開します。
-	 * @param zip 展開するファイル
-	 * @param dir 展開するディレクトリ
-	 * @param filter ファイルフィルター
-	 * @return 展開したファイル配列
-	 * @throws IOException 入出力エラー
-	 */
-	private File[] extractZip(File zip, File dir, FileFilter filter) throws IOException {
-		long start = System.currentTimeMillis();
-		boolean isExtracted = false;
-		ZipInputStream in = null;
-		List<File> extracted = new ArrayList<File>();
-		try {
-			in = new ZipInputStream(new FileInputStream(zip));
-			ZipEntry entry;
-			while ((entry = in.getNextEntry()) != null) {
-				String entryPath = entry.getName();
-				/* 出力先ファイル */
-				File outFile = new File(dir.getCanonicalPath() + File.separatorChar + entryPath);
-				if (filter == null || filter.accept(outFile)) {
-					if (!outFile.exists() || entry.getSize() != outFile.length()) {
-						/* entryPathにディレクトリを含む場合があるので */
-						File dirParent = outFile.getParentFile();
-						if(!dirParent.isDirectory()) {
-							if (!dirParent.mkdir()) {
-								throw new IOException("extract mkdir failed");
-							}
-						}
-						/* ディレクトリはmkdirで作成する必要がある */
-						if (entryPath.endsWith(File.separator)) {
-							if (!outFile.mkdirs()) {
-								throw new IOException("extract mkdir failed");
-							}
-						} else {
-							FileOutputStream out = null;
-							try {
-								out = new FileOutputStream(outFile);
-								this.copy(in, out);
-							} finally {
-								if (out != null) {
-									out.close();
-								}
-							}
-						}
-						isExtracted = true;
-					}
-					extracted.add(outFile);
-				}
-			}
-		} finally {
-			if (in != null) {
-				in.close();
-			}
-		}
-		long end = System.currentTimeMillis();
-		if (isExtracted) {
-			Log.out(this, "extract " + zip + " / " + (end - start) + "ms");
-		}
-		return extracted.toArray(new File[]{});
-	}
 	/**
 	 * 頂点の外部への接続情報の取得
 	 * @param code 市町村番号
@@ -288,50 +138,6 @@ public class FileDatabase extends Observable {
 	}
 
 	/**
-	 * 国土数値情報の行政界を取得します。
-	 * @param code 都道府県番号
-	 * @return 国土数値情報の行政界のファイル
-	 * @throws IOException 入出力エラー
-	 */
-	public File getKsjBoder(int code) throws IOException {
-		String stringCode = this.prefectureFormat(code);
-		File dir = new File(this.CACHE_DIR + "ksj" + File.separatorChar + stringCode);
-		DLFile zip = new DLFile("KSJ " + code, dir.getParent() + File.separatorChar + stringCode + ".zip");
-		if (!dir.isDirectory()) {
-			dir.mkdirs();
-		}
-		if (zip.exists() || !dir.isDirectory() || dir.list().length == 0) {
-			/* 圧縮ファイルが残っている
-			 * or ディレクトリが存在しない
-			 * or ディレクトリ内のファイルが存在しない
-			 * or ディレクトリの内容が正確でない（チェックできてない）
-			 */
-			URL url = new URL(FileDatabase.KSJ_URL + "N03-11A-" + stringCode + "-01.0a.zip");
-			
-			if (!this.download(url, zip)) {
-				throw new IOException("download failed: "+ code);
-			}
-		}
-		File[] extracts = null;
-		FileFilter filter = new GeneralFileFilter("txt");
-		if(zip.exists()) {
-			// ファイルの展開
-			extracts = this.extractZip(zip, dir, filter);
-			if(!zip.delete()){
-				throw new IOException("delete failure: "+ zip.getCanonicalPath());
-			}
-		} else if(dir.isDirectory()) {
-			extracts = dir.listFiles(filter);
-		}
-		if(extracts == null || extracts.length == 0) {
-			throw new IOException("file not found: "+ code);
-		} else if (extracts.length != 1) {
-			throw new IOException("files found: "+ code);
-		}
-		return extracts[0];
-	}
-
-	/**
 	 * 世界地図データの取得
 	 * @return 世界地図データ
 	 */
@@ -341,10 +147,6 @@ public class FileDatabase extends Observable {
 	
 	private String getSerializablePath(String path) {
 		return this.SERIALIZE_DIR + path;
-	}
-	
-	private String prefectureFormat(int code) {
-		return this.prefFormat.format(code);
 	}
 	
 	/**

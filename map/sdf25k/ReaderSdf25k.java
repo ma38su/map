@@ -39,7 +39,6 @@ public class ReaderSdf25k {
 
 	public static String CODE = "SJIS";
 	private final int DEFAULT_BORDER_CAPACITY = 20;
-	private final int DEFAULT_MESH_CAPACITY = 20000;
 	private final int DEFAULT_NODE_CAPACITY = 1000;
 	private final int DEFAULT_SLP_CAPACITY = 20000;
 	private final String KEY_BORDER = "GK.sal";
@@ -147,10 +146,6 @@ public class ReaderSdf25k {
 				File dir = null;
 				Rectangle area = this.readSLM(dir);
 				data = new DataSdf25k(code, area);
-				
-				// 標高メッシュ */
-				Mesh[][] mesh = this.readMesh(dir, area);
-				data.setMesh(mesh);
 				
 				Point[] slp = this.readSLP(dir, area);
 				
@@ -393,63 +388,6 @@ public class ReaderSdf25k {
 			Log.err(this, e);
 		}
 		return point;
-	}
-
-	/**
-	 * メッシュ標高の読み込み
-	 * @param dir ファイルディレクトリ
-	 * @param area 読み込む範囲
-	 * @return メッシュ標高のリスト
-	 */
-	private Mesh[][] readMesh(File dir, Rectangle area) {
-		Mesh[][] mesh = null;
-		List<Point> points = new ArrayList<Point>(this.DEFAULT_MESH_CAPACITY);
-		try {
-			File slp = new File(dir.getCanonicalPath() + File.separatorChar + dir.getName() + "MH.slp");
-			File sal = new File(dir.getCanonicalPath() + File.separatorChar + dir.getName() + "MH.sal");
-			BufferedReader bi = null;
-			try {
-				bi = new BufferedReader(new FileReader(slp));
-				while (bi.ready()) {
-					String line = bi.readLine();
-					int x = Integer.parseInt(line.substring(0, 7)) + area.x;
-					int y = Integer.parseInt(line.substring(8, 15)) + area.y;
-					points.add(new Point(x, y));
-				}
-			} finally {
-				if (bi != null) {
-					bi.close();
-				}
-			}
-			try {
-				mesh = new Mesh[area.width / Mesh.SIZE + 1][area.height / Mesh.SIZE + 1];
-				bi = new BufferedReader(new InputStreamReader(new FileInputStream(sal), ReaderSdf25k.CODE));
-				String line;
-				while ((line = bi.readLine()) != null) {
-					Matcher matcher = this.SAL_PARSER.matcher(line.substring(17));
-					Point point = null;
-					int height = 0;
-					while (matcher.find()) {
-						String param = matcher.group(1);
-						if (param.equals("PT")) {
-							point = points
-							.get(Integer.parseInt(matcher.group(4)) - 1);
-						} else if (param.equals("HK")) {
-							height = Integer.parseInt(matcher.group(3));
-						}
-					}
-					mesh[(point.x - area.x) / Mesh.SIZE][(point.y - area.y) / Mesh.SIZE] = new Mesh(height);
-				}
-			} finally {
-				if (bi != null) {
-					bi.close();
-				}
-			}
-		} catch (Throwable e) {
-			mesh = null;
-			Log.err(this, e);
-		}
-		return mesh;
 	}
 
 	/**

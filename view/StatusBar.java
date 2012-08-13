@@ -1,22 +1,16 @@
 package view;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Observable;
-import java.util.Observer;
-
 import javax.swing.JLabel;
 
 import map.route.RouteNavigation;
 
-import jp.sourceforge.ma38su.util.DLFile;
 import jp.sourceforge.ma38su.util.Log;
 
 /**
  * JLabelを継承したステータスバー
  * @author ma38su
  */
-public class StatusBar extends JLabel implements Runnable, Observer {
+public class StatusBar extends JLabel implements Runnable {
 
 	/**
 	 * 数値地図2500の識別子
@@ -71,7 +65,6 @@ public class StatusBar extends JLabel implements Runnable, Observer {
 	 */
 	public StatusBar(String msg) {
 		super(msg);
-		this.list = new LinkedList<DLFile>();
 		this.thread = new Thread(this);
 		this.thread.start();
 	}
@@ -107,19 +100,6 @@ public class StatusBar extends JLabel implements Runnable, Observer {
 					break;
 			}
 			sb.append(this.content);
-		}
-		if (this.list.size() > 0) {
-			Iterator<DLFile> itr = this.list.iterator();
-			while (itr.hasNext()) {
-				DLFile file = itr.next();
-				if (file.getState() == DLFile.STATE_FINISH) {
-					itr.remove();
-				} else {
-					sb.append(" / ");
-					sb.append(file);
-					flag = true;
-				}
-			}
 		}
 		if (sb.length() == 0) {
 			super.setText(" ");
@@ -178,13 +158,5 @@ public class StatusBar extends JLabel implements Runnable, Observer {
 	 */
 	public void startReading(String arg) {
 		this.content = arg;
-	}
-
-	private LinkedList<DLFile> list;
-	public void update(Observable o, Object arg) {
-		if (arg instanceof DLFile) {
-			DLFile file = (DLFile) arg;
-			this.list.add(file);
-		}
 	}
 }

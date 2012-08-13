@@ -26,7 +26,7 @@ public class Version {
 	public static String getVersion() {
 		try {
 			String ver = Version.get("/history.txt");
-			String latest = Version.getLatest("ma38su", "Digital Map");
+			String latest = Version.getLatest("ma38su", "KSJ Map");
 			if (ver != null && latest != null && !ver.equals(latest)) {
 				return latest;
 			}

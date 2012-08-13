@@ -39,6 +39,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
+import util.gui.ExportableComponent;
+
 import jp.sourceforge.ma38su.util.GeneralFileFilter;
 import jp.sourceforge.ma38su.util.Log;
 

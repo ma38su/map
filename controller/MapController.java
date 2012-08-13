@@ -10,14 +10,10 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 
 import javax.print.PrintException;
-import javax.swing.AbstractButton;
-import javax.swing.JCheckBoxMenuItem;
 
 import jp.sourceforge.ma38su.gui.Output;
 import jp.sourceforge.ma38su.util.Log;
 
-import util.Setting;
-import util.Version;
 import view.DialogFactory;
 import view.MapPanel;
 
@@ -43,13 +39,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 	private final MapPanel panel;
 
 	/**
-	 * 設定
-	 */
-	private Setting setting;
-
-	private JCheckBoxMenuItem updateCheckItem;
-
-	/**
 	 * 操作の中心位置（マウス位置）のX座標
 	 */
 	private int x;
@@ -63,32 +52,15 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 	 * @param panel 地図表示のためのパネル
 	 * @param setting 設定
 	 */
-	public MapController(final MapPanel panel, Setting setting) {
+	public MapController(final MapPanel panel) {
 		this.panel = panel;
-		this.setting = setting;
 		this.x = panel.getWidth() / 2;
 		this.y = panel.getHeight() / 2;
 	}
 
-	public void setStyle(String file) throws IllegalArgumentException {
-		this.panel.readStyle(file);
-		this.panel.repaint();
-	}
-	public void setDefaultStyle() {
-		this.panel.setDefaultStyle();
-		this.panel.repaint();
-	}
-	
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
-		if (command.equals("exit")) {
-			// 即終了しても大丈夫だろうか・・・
-			System.exit(0);
-		} else if (command.equals("menu_help")) {
-			this.updateCheckItem.setVisible(true);
-		} else if (command.equals("about")) {
-			DialogFactory.aboutDialog();
-		} else if (command.startsWith("export")) {
+		if (command.startsWith("export")) {
 			try {
 				while (!this.panel.isLoaded()) {
 						Thread.sleep(2L);
@@ -110,13 +82,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 			} catch (PrintException ex) {
 				Log.err(this, ex);
 			}
-		} else if (command.startsWith("navi_")) {
-			if (command.endsWith("clear")) {
-				this.panel.clearNavigation();
-				this.panel.repaint();
-			}
-		} else if (command.startsWith("path_")) {
-			this.panel.switchShortestPathAlgorithm(command);
 		} else if (command.startsWith("label")) {
 			if (command.endsWith("govt")) {
 				this.panel.switchLabel(MapPanel.lABEL_PLACE_GOVT);
@@ -126,23 +91,10 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 				this.panel.switchLabel(MapPanel.LABEL_PLACE);
 			} else if (command.endsWith("Facility")) {
 				this.panel.switchLabel(MapPanel.LABEL_FACILITY);
-			} else if (command.endsWith("label_antialiasing")) {
-				this.panel.switchTextAntialiasing();
-				this.panel.repaint();
-			} else if (command.endsWith("shadow")) {
-				this.panel.switchShadow();
-				this.panel.repaint();
 			} else if (command.endsWith("failure")) {
 				this.panel.switchLabelFailure();
 			}
 			this.panel.repaint();
-		} else if (command.equals("node")) {
-			this.panel.switchNodeView();
-		} else if (command.equals("alias")) {
-			this.panel.switchRendering();
-		} else if (command.equals("highway")) {
-			this.panel.switchUseHighway();
-			this.panel.reroute();
 		} else if (command.startsWith("move_")) {
 			if (command.equals("move_location")) {
 				DialogFactory.locationDialog(this.panel, this);
@@ -164,14 +116,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 				}
 				this.panel.repaint(); 
 			}
-		} else if (command.equals("version")) {
-			String version = Version.getVersion();
-			DialogFactory.versionDialog(version, this.panel, this);
-		} else if (command.equals("check")) {
-			Object source = e.getSource();
-			boolean state = ((AbstractButton) source).isSelected();
-			this.setting.set(Setting.KEY_UPDATE, Boolean.toString(state));
-			this.updateCheckItem.setSelected(state);
 		} else if (command.startsWith("show")) {
 			if (command.endsWith("roadway")) {
 				this.panel.switchRoadway();
@@ -179,9 +123,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 			} else if (command.endsWith("highway")) {
 					this.panel.switchHighway();
 					this.panel.repaint();
-			} else if (command.endsWith("railway")) {
-				this.panel.switchRailway();
-				this.panel.repaint();
 			} else if (command.endsWith("river")) {
 				this.panel.switchRiver();
 				this.panel.repaint();
@@ -192,9 +133,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 				this.panel.switchAxis();
 				this.panel.repaint();
 			}
-		} else if (command.equals("TSP")) {
-			this.panel.switchTsp();
-			this.panel.repaint();
 		}
 	}
 
@@ -206,17 +144,7 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 		return (float) this.panel.getLocationY(this.y);
 	}
 
-	public Setting getSetting() {
-		return this.setting;
-	}
-
 	public void mouseClicked(MouseEvent e) {
-		if (e.getButton() == MouseEvent.BUTTON3) {
-			boolean flag = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
-			this.panel.searchBoundary(e.getX(), e.getY(), flag);
-		} else {
-			// this.panel.test();
-		}
 	}
 
 	public void mouseDragged(MouseEvent e) {
@@ -273,11 +201,4 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 		this.panel.repaint();
 	}
 
-	/**
-	 * 起動時に更新を確認するためのメニュー
-	 * @param item
-	 */
-	public void setUpdateCheck(JCheckBoxMenuItem item) {
-		this.updateCheckItem = item;
-	}
 }

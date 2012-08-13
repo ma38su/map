@@ -1,6 +1,5 @@
 package view;
 
-import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.LayoutManager;
@@ -8,7 +7,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -27,28 +25,6 @@ import controller.MapController;
  * @author ma38su
  */
 public class DialogFactory {
-	
-	/**
-	 * 更新情報を確認します。
-	 * @param version 現在バージョン
-	 * @param comp コンポーネント
-	 * @param controller コントローラ
-	 */
-	public static void versionDialog(String version, Component comp, MapController controller) {
-		if (version != null) {
-			JPanel panel = new JPanel(new GridLayout(0, 1, 0, 0));
-			panel.add(new JLabel("最新版 ver."+ version + " が見つかりました。"));
-			boolean isUpdate = !"false".equalsIgnoreCase(controller.getSetting().get(Setting.KEY_UPDATE));
-			JCheckBox check = new JCheckBox("起動時に更新情報を確認する", isUpdate);
-			check.setActionCommand("check");
-			check.addActionListener(controller);
-			panel.add(check);
-			String title = "Digital Map ver."+ Version.get("/history.txt");
-			JOptionPane.showMessageDialog(comp, panel, title, JOptionPane.INFORMATION_MESSAGE);
-		} else {
-			JOptionPane.showMessageDialog(comp, "新しい更新はみつかりませんでした。", "更新情報", JOptionPane.INFORMATION_MESSAGE);
-		}
-	}
 	
 	/**
 	 * 緯度経度を指定して表示位置を移動させるためのダイアログ
@@ -126,7 +102,7 @@ public class DialogFactory {
 		JPanel text = new JPanel(new GridLayout(0, 1, 0, 0));
 		text.add(new JLabel("申し訳ございません。致命的な問題が発生しました。", SwingConstants.LEFT));
 		text.add(new JLabel(e.getClass().getName() +": "+ e.getLocalizedMessage(), SwingConstants.LEFT));
-		JOptionPane.showMessageDialog(comp, text, "Digital Map - 致命的なエラー", JOptionPane.ERROR_MESSAGE);
+		JOptionPane.showMessageDialog(comp, text, "KSJ Map - 致命的なエラー", JOptionPane.ERROR_MESSAGE);
 	}
 
 	/**
@@ -138,14 +114,14 @@ public class DialogFactory {
 		JPanel text = new JPanel(new GridLayout(0, 1, 0, 0));
 		text.add(new JLabel("メモリが不足しました。", SwingConstants.LEFT));
 		text.add(new JLabel("詳しくはヘルプデスク（WEB）をご覧ください。", SwingConstants.LEFT));
-		JOptionPane.showMessageDialog(comp, text, "Digital Map - メモリ不足", JOptionPane.ERROR_MESSAGE);
+		JOptionPane.showMessageDialog(comp, text, "KSJ Map - メモリ不足", JOptionPane.ERROR_MESSAGE);
 	}
 	
 	/**
 	 * DigitalMapの情報を表示するダイアログ
 	 */
 	public static void aboutDialog() {
-		String title = "Digital Map ver."+ Version.get("/history.txt");
+		String title = "KSJ Map ver."+ Version.get("/history.txt");
 		JPanel text = new JPanel(new GridLayout(0, 1, 0, 0));
 		text.add(new JLabel(title, SwingConstants.LEFT));
 		text.add(new JLabel("Copyright 2005-2006 ma38su", SwingConstants.LEFT));
@@ -157,7 +133,7 @@ public class DialogFactory {
 	 * @param setting 
 	 */
 	public static void termsDialog(Setting setting) {
-		String title = "Digital Map ver."+ Version.get("/history.txt");
+		String title = "KSJ Map ver."+ Version.get("/history.txt");
 		JPanel text = new JPanel(new GridLayout(0, 1, 0, 0));
 		text.add(new JLabel("本ソフトウェア利用の前に必ずお読みください。"));
 		text.add(new JLabel("同意いただいた方のみご利用いただけます。"));

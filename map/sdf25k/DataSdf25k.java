@@ -29,8 +29,6 @@ public class DataSdf25k implements Serializable {
 	
 	private Map<String, Label[]> label;
 	
-	private Mesh[][] mesh;
-
 	private Map<Integer, Node> nodes;
 
 	private Curve[] railway;
@@ -72,10 +70,6 @@ public class DataSdf25k implements Serializable {
 
 	public Map<String, Label[]> getLabel() {
 		return this.label;
-	}
-
-	public Mesh[][] getMesh() {
-		return this.mesh;
 	}
 
 	public Map<Integer, Node> getNodes() {
@@ -121,10 +115,6 @@ public class DataSdf25k implements Serializable {
 
 	public void setLabel(Map<String, Label[]> label) {
 		this.label = label;
-	}
-
-	void setMesh(Mesh[][] mesh) {
-		this.mesh = mesh;
 	}
 
 	public void setNodes(Map<Integer, Node> nodes) {

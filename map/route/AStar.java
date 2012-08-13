@@ -1,4 +1,4 @@
-package map.route.tsp;
+package map.route;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,10 +7,6 @@ import jp.sourceforge.ma38su.util.Log;
 
 import map.MapDataManager;
 import map.Road;
-import map.route.DirectDistance;
-import map.route.Heap;
-import map.route.HeuristicComparator;
-import map.route.RouteEntry;
 import map.sdf25k.Node;
 
 public class AStar {

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import map.MapDataManager;
+import map.route.AStar;
 import map.route.RouteEntry;
 import map.sdf25k.Node;
 

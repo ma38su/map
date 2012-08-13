@@ -59,11 +59,8 @@ public class CellMethod {
 	 * @throws IOException 
 	 */
 	public CellMethod(String dir) throws IOException {
-		if (!dir.endsWith(File.separator)) {
-			throw new IllegalArgumentException("ディレクトリの末尾は" + File.separatorChar + "である必要があります。");
-		}
 		try {
-			this.index = new RandomAccessFile(dir + "sdf25k.idx", "r");
+			this.index = new RandomAccessFile(dir + File.separatorChar + "sdf25k.idx", "r");
 			this.x = this.index.readInt();
 			this.y = this.index.readInt();
 			int width = this.index.readInt();
@@ -86,7 +83,7 @@ public class CellMethod {
 			}
 			throw new IllegalArgumentException(e);
 		}
-		this.disc = new RandomAccessFile(dir + "sdf25k.cell", "r");
+		this.disc = new RandomAccessFile(dir + File.separatorChar + "sdf25k.cell", "r");
 	}
 	
 	/**

@@ -1,6 +1,7 @@
 package labeling;
 
 import java.awt.Color;
+
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
@@ -14,7 +15,8 @@ import java.util.Map;
 
 import view.MapPanel;
 
-import map.sdf25k.Station;
+import map.ksj.BusStop;
+import map.ksj.Station;
 
 /**
  * 単純なアルゴリズムのラベル配置
@@ -276,79 +278,201 @@ public class SimpleLabeling {
 		
 	}
 
-	/**
-	 * 市区町村名ラベルを追加します。
-	 * @param name 
-	 * @param x X座標
-	 * @param y Y座標
-	 * @param isPoint ラベルの地点の表示の有無
-	 */
-	public void add(String name, int x, int y, boolean isPoint) {
+	public void add(Station[] stations) {
+		Font font = this.g.getFont();
 		FontMetrics metrics = this.g.getFontMetrics();
 		int fontAscent = metrics.getAscent();
 		int fontHeight = metrics.getHeight();
+		
+		List<FixedLabel> list = this.label.get(font);
+		if (list == null) {
+			list = new ArrayList<FixedLabel>();
+			this.label.put(font, list);
+		}
+		for (Station st : stations) {
+			String name = st.getName();
+			int lat = st.getY();
+			int lng = st.getX();
+			// 表示領域内のであれば描画する
+			if (this.screen0.contains(lng, lat)) {
+				
+				int r = (int) (2 / scale + 0.5);
+				int r2 = (int) (4 / scale + 0.5);
+				int x = (int) ((lng - this.screen0.x) * this.scale);
+				int y = this.screen.height - (int) ((lat - this.screen0.y) * this.scale);
+
+				int fontWidth = metrics.stringWidth(name);
+
+				// 施設の位置を描画する
+				boolean flag = false;
+				Rectangle labelCandidate = new Rectangle();
+				labelCandidate.width = fontWidth + 8;
+				labelCandidate.height = fontHeight + 3;
+				
+				for (int i = 0; i < 4; i++) {
+					boolean isLap = false;
+					labelCandidate.x = x - (i / 2) * labelCandidate.width;
+					labelCandidate.y = y - (i % 2) * labelCandidate.height;
+					
+					for (Rectangle rect : this.lap) {
+						if (labelCandidate.intersects(rect)) {
+							isLap = true;
+							break;
+						}
+					}
+
+					// 重なるか，スクリーン内からはみでる場合は再計算
+					if (isLap || !this.screen.contains(labelCandidate)) {
+						continue;
+					}
+
+					this.lap.add(labelCandidate);
+					list.add(new FixedLabel(name, labelCandidate.x + 2 + (i / 2) * (labelCandidate.width - fontWidth - 4), labelCandidate.y + fontAscent + (i % 2) * 3));
+					flag = true;
+					break;
+				}
+				if (flag) {
+					this.g.setColor(Color.DARK_GRAY);
+					this.g.fillOval(lng - r, lat - r, r2, r2);
+				} else if (this.isFailure) {
+					this.g.setColor(Color.GRAY);
+					this.g.drawLine(x - r, y - r, x + r, y + r);
+					this.g.drawLine(x + r, y - r, x - r, y + r);
+				}
+			}
+		}
+	}
+
+	public void add(BusStop[] stops) {
 		Font font = this.g.getFont();
+		FontMetrics metrics = this.g.getFontMetrics();
+		int fontAscent = metrics.getAscent();
+		int fontHeight = metrics.getHeight();
+		
+		List<FixedLabel> list = this.label.get(font);
+		if (list == null) {
+			list = new ArrayList<FixedLabel>();
+			this.label.put(font, list);
+		}
+		for (BusStop st : stops) {
+			String name = st.getName();
+			int lat = st.getY();
+			int lng = st.getX();
+			// 表示領域内のであれば描画する
+			if (this.screen0.contains(lng, lat)) {
+				
+				int r = (int) (2 / scale + 0.5);
+				int r2 = (int) (4 / scale + 0.5);
+				int x = (int) ((lng - this.screen0.x) * this.scale);
+				int y = this.screen.height - (int) ((lat - this.screen0.y) * this.scale);
+
+				int fontWidth = metrics.stringWidth(name);
+
+				// 施設の位置を描画する
+				boolean flag = false;
+				Rectangle labelCandidate = new Rectangle();
+				labelCandidate.width = fontWidth + 8;
+				labelCandidate.height = fontHeight + 3;
+				
+				for (int i = 0; i < 4; i++) {
+					boolean isLap = false;
+					labelCandidate.x = x - (i / 2) * labelCandidate.width;
+					labelCandidate.y = y - (i % 2) * labelCandidate.height;
+					
+					for (Rectangle rect : this.lap) {
+						if (labelCandidate.intersects(rect)) {
+							isLap = true;
+							break;
+						}
+					}
+
+					// 重なるか，スクリーン内からはみでる場合は再計算
+					if (isLap || !this.screen.contains(labelCandidate)) {
+						continue;
+					}
+
+					this.lap.add(labelCandidate);
+					list.add(new FixedLabel(name, labelCandidate.x + 2 + (i / 2) * (labelCandidate.width - fontWidth - 4), labelCandidate.y + fontAscent + (i % 2) * 3));
+					flag = true;
+					break;
+				}
+				if (flag) {
+					this.g.setColor(Color.DARK_GRAY);
+					this.g.fillOval(lng - r, lat - r, r2, r2);
+				} else if (this.isFailure) {
+					this.g.setColor(Color.GRAY);
+					this.g.drawLine(x - r, y - r, x + r, y + r);
+					this.g.drawLine(x + r, y - r, x - r, y + r);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 市区町村名ラベルを追加します。
+	 * @param name 
+	 * @param lng X座標
+	 * @param lat Y座標
+	 * @param isPoint ラベルの地点の表示の有無
+	 */
+	public void add(String name, int lng, int lat, boolean isPoint) {
+
+		Font font = this.g.getFont();
+		FontMetrics metrics = this.g.getFontMetrics();
+		int fontAscent = metrics.getAscent();
+		int fontHeight = metrics.getHeight();
+		
 		List<FixedLabel> list = this.label.get(font);
 		if (list == null) {
 			list = new ArrayList<FixedLabel>();
 			this.label.put(font, list);
 		}
 		// 表示領域内のであれば描画する
-		if (this.screen.contains(x, y)) {
+		if (this.screen0.contains(lng, lat)) {
+			
+			int r = (int) (2 / scale + 0.5);
+			int r2 = (int) (4 / scale + 0.5);
+			int x = (int) ((lng - this.screen0.x) * this.scale);
+			int y = this.screen.height - (int) ((lat - this.screen0.y) * this.scale);
+
 			int fontWidth = metrics.stringWidth(name);
 
 			// 施設の位置を描画する
+			boolean flag = false;
 			Rectangle labelCandidate = new Rectangle();
 			labelCandidate.width = fontWidth + 8;
 			labelCandidate.height = fontHeight + 3;
-			labelCandidate.x = x - labelCandidate.width / 2;
-			labelCandidate.y = y - labelCandidate.height / 2;
-			boolean isLap = false;
-			if (!this.screen.contains(labelCandidate)) {
-				isLap = true;
-			}
-			for (Rectangle rect : this.lap) {
-				if (rect.intersects(labelCandidate)) {
-					isLap = true;
-					break;
+			
+			for (int i = 0; i < 4; i++) {
+				boolean isLap = false;
+				labelCandidate.x = x - (i / 2) * labelCandidate.width;
+				labelCandidate.y = y - (i % 2) * labelCandidate.height;
+				
+				for (Rectangle rect : this.lap) {
+					if (labelCandidate.intersects(rect)) {
+						System.out.println(i);
+						isLap = true;
+						break;
+					}
 				}
-			}
-			// 重なるか，スクリーン内からはみでる場合は再計算
-			if (!isLap) {
+
+				// 重なるか，スクリーン内からはみでる場合は再計算
+				if (isLap || !this.screen.contains(labelCandidate)) {
+					continue;
+				}
+
 				this.lap.add(labelCandidate);
-				list.add(new FixedLabel(name, labelCandidate.x + 2 + (labelCandidate.width - fontWidth - 4) / 2, labelCandidate.y + fontAscent + 3 / 2));
-				isPoint = false;
-			} else {
-				isLap = false;
-				for (int i = 0; i < 4; i++) {
-					labelCandidate.x = x - (i / 2) * labelCandidate.width;
-					labelCandidate.y = y - (i % 2) * labelCandidate.height;
-					for (Rectangle rect : this.lap) {
-						if (rect.intersects(labelCandidate)) {
-							isLap = true;
-							break;
-						}
-					}
-	
-					// 重なるか，スクリーン内からはみでる場合は再計算
-					if (isLap || !this.screen.contains(labelCandidate)) {
-						continue;
-					}
-	
-					this.lap.add(labelCandidate);
-					list.add(new FixedLabel(name, labelCandidate.x + 2 + (i / 2) * (labelCandidate.width - fontWidth - 4), labelCandidate.y + fontAscent + (i % 2) * 3));
-					break;
-				}
+				list.add(new FixedLabel(name, labelCandidate.x + 2 + (i / 2) * (labelCandidate.width - fontWidth - 4), labelCandidate.y + fontAscent + (i % 2) * 3));
+				flag = true;
+				break;
 			}
-			if (isPoint) {
-				if (!isLap) {
-					this.g.setColor(Color.DARK_GRAY);
-					this.g.fillOval(x - 2, y - 2, 4, 4);
-				} else if (this.isFailure && this.screen.contains(x, y)) {
-					this.g.setColor(Color.GRAY);
-					this.g.drawLine(x - 2, y - 2, x + 2, y + 2);
-					this.g.drawLine(x + 2, y - 2, x - 2, y + 2);
-				}
+			if (flag) {
+				this.g.setColor(Color.DARK_GRAY);
+				this.g.fillOval(lng - r, lat - r, r2, r2);
+			} else if (this.isFailure) {
+				this.g.setColor(Color.GRAY);
+				this.g.drawLine(x - r, y - r, x + r, y + r);
+				this.g.drawLine(x + r, y - r, x - r, y + r);
 			}
 		}
 	}

@@ -16,11 +16,6 @@ import labeling.Labels;
  * @author ma38su
  */
 public class DataCity implements Serializable {
-	
-	public DataCity(int code, String name) {
-		this.code = code;
-		this.name = name;
-	}
 
 	/**
 	 * 市町村番号フォーマット
@@ -31,7 +26,7 @@ public class DataCity implements Serializable {
 	 * 都道府県番号フォーマット
 	 */
 	private final static NumberFormat PREFECTURE_FORMAT = new DecimalFormat("00");
-
+	
 	/**
 	 * 市区町村番号(int)を(String)に変換
 	 * @param code 市区町村番号
@@ -74,12 +69,17 @@ public class DataCity implements Serializable {
 	
 	private int y;
 
+	public DataCity(int code, String name) {
+		this.code = code;
+		this.name = name;
+	}
+	
 	/**
 	 * 市区町村データのコンストラクタ
 	 * @param code 市区町村番号
 	 * @param polygon 行政界
 	 */
-	public DataCity(Integer code, Polygon[] polygon) {
+	public DataCity(int code, Polygon[] polygon) {
 		this.code = code;
 		this.ksj = polygon;
 		this.shop = new HashMap<String, Labels>();

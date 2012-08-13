@@ -1,7 +1,7 @@
 /*
- * Digital Map
+ * KSJ Map
  * 地図データの閲覧のためのプログラムです。
- * Copyright(C) 2005-2006 ma38su
+ * Copyright(C) 2005-2012 ma38su
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,10 +20,10 @@
 import index.CellMethod;
 
 import java.awt.BorderLayout;
+import java.awt.GraphicsEnvironment;
 import java.awt.Polygon;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
@@ -33,9 +33,6 @@ import javax.swing.UIManager;
 import jp.sourceforge.ma38su.util.Log;
 
 import map.MapDataManager;
-import map.ReaderIsj;
-import map.store.Store;
-import util.Loader;
 import util.Setting;
 import util.Version;
 import view.DialogFactory;
@@ -53,24 +50,9 @@ import database.FileDatabase;
 public class StartUp {
 
 	/**
-	 * フレーム高さ
-	 */
-	private static final int F_WIDTH = 800;
-
-	/**
-	 * フレーム幅
-	 */
-	private static final int F_HEIGHT = 600;
-
-	/**
-	 * args[0]には地図データのルートディレクトリの位置を指定します。
-	 * args[1]にはプラグインのディレクトリの位置を指定します。
-	 * @param libDir 
-	 * @param pluginDir 
 	 * @param mapDir 
-	 * @param styleDir
 	 */
-	public static void startup(String libDir, String pluginDir, String mapDir, String styleDir) {
+	public static void startup(String mapDir) {
 
 		Log.isDebug = false;
 
@@ -86,7 +68,7 @@ public class StartUp {
 
 		String version = Version.get("/history.txt");
 		Setting.setVersion(version);
-		String title = version == null ? "Digital Map" : "Digital Map ver." + version;
+		String title = version == null ? "KSJ Map" : "KSJ Map ver." + version;
 		frame.setTitle(title);
 
 		final Setting setting = new Setting(mapDir + "setting.ini");
@@ -100,28 +82,16 @@ public class StartUp {
 			return;
 		}
 		StatusBar statusbar = new StatusBar(" ");
-		MapPanel panel = new MapPanel(styleDir);
+		MapPanel panel = new MapPanel();
 
-		MapController controller = new MapController(panel, setting);
+		MapController controller = new MapController(panel);
 		
-		JMenuBar menu = new MapMenu(styleDir, controller);
+		JMenuBar menu = new MapMenu(panel, controller);
 
 		boolean isFirst = !"true".equalsIgnoreCase(setting.get(Setting.KEY_TERMS));
 		if (isFirst) {
 			DialogFactory.termsDialog(setting);
 		}
-
-		if (!"false".equalsIgnoreCase(setting.get(Setting.KEY_UPDATE))) {
-			try {
-				String latest = Version.getLatest("ma38su", "Digital Map");
-				if (latest != null && version != null && !version.equals(latest)) {
-					DialogFactory.versionDialog(latest, frame, controller);
-				}
-			} catch (IOException ex) {
-				DialogFactory.errorDialog(panel, ex);
-			}
-		}
-
 
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLayout(new BorderLayout());
@@ -129,8 +99,8 @@ public class StartUp {
 		frame.add(panel, BorderLayout.CENTER);
 		frame.add(menu, BorderLayout.NORTH);
 
-		
-		frame.setSize(StartUp.F_WIDTH, StartUp.F_HEIGHT);
+		GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		frame.setBounds(env.getMaximumWindowBounds());
 		frame.setLocationRelativeTo(null);
 
 		frame.setVisible(true);
@@ -138,15 +108,12 @@ public class StartUp {
 		try {
 			statusbar.startReading("初期設定");
 
-			Collection<Store> store = Loader.loadStorePlugin(pluginDir, mapDir + "store" + File.separatorChar);
-			
 			FileDatabase fileDB = new FileDatabase(mapDir);
-			fileDB.addObserver(statusbar);
 			if (isFirst) {
 				Log.out(StartUp.class, "delete Cache Files");
 				fileDB.clearCache();
 			}
-			final MapDataManager maps = new MapDataManager(panel, new CellMethod(".data/index/"), fileDB, codeDB, new ReaderIsj(mapDir + "isj" + File.separatorChar), store, statusbar);
+			final MapDataManager maps = new MapDataManager(panel, new CellMethod(".data" + File.separatorChar + "index"), fileDB, codeDB, statusbar);
 			statusbar.finishReading();
 
 			statusbar.startReading("READ OpenGIS Worlddata");

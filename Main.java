@@ -1,7 +1,5 @@
 import java.io.File;
 
-import javax.swing.JOptionPane;
-
 import util.Loader;
 
 /**
@@ -17,23 +15,11 @@ import util.Loader;
 public class Main {
 	public static void main(String[] args) {
 		String mapDir = ".data" + File.separatorChar;
-		String pluginDir = "plugin" + File.separatorChar;
 		String libDir = "lib" + File.separatorChar;
-		String styleDir = ".style" + File.separatorChar;
-		switch (args.length) {
-			case 4: styleDir = args[3];
-			case 3: libDir = args[2];
-			case 2: pluginDir = args[1];
-			case 1: mapDir = args[0];
-		}
 
-		try {
-			// 外部JARをロードします。
-			Loader.addExternalJar(libDir);
-		} catch (Exception e) {
-			JOptionPane.showMessageDialog(null, "必要なライブラリが見つかりません。");
-			return;
+		// 外部JARをロードします。
+		if (Loader.addExternalJar(libDir)) {
+			StartUp.startup(mapDir);
 		}
-		StartUp.startup(libDir, pluginDir, mapDir, styleDir);
 	}
 }

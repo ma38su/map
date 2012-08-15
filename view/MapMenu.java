@@ -51,25 +51,40 @@ public class MapMenu extends JMenuBar {
 		JMenu menuView = new JMenu("表示設定(V)");
 		menuView.setMnemonic(KeyEvent.VK_V);
 		
-		JMenu itemViewLabel = new JMenu("ラベル表示");
-		menuView.add(itemViewLabel);
+		JMenu menuViewLabel = new JMenu("ラベル表示");
+		menuView.add(menuViewLabel);
 		
-		JCheckBoxMenuItem itemViewLabelStation = new JCheckBoxMenuItem("駅", true);
-		itemViewLabelStation.setActionCommand("labelStation");
-		itemViewLabelStation.addActionListener(control);
-		itemViewLabel.add(itemViewLabelStation);
+		final JCheckBoxMenuItem menuViewLabelStationVisible = new JCheckBoxMenuItem("駅", panel.isStationLabelVisible());
+		menuViewLabelStationVisible.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setStationLabelVisible(menuViewLabelStationVisible.isSelected());
+				panel.repaint();
+			}
+		});
+		menuViewLabel.add(menuViewLabelStationVisible);
+
+		final JCheckBoxMenuItem menuViewLabelBusVisible = new JCheckBoxMenuItem("バス", panel.isBusLabelVisible());
+		menuViewLabelStationVisible.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setBusLabelVisible(menuViewLabelBusVisible.isSelected());
+				panel.repaint();
+			}
+		});
+		menuViewLabel.add(menuViewLabelBusVisible);
 		
-		JCheckBoxMenuItem item2_1_2 = new JCheckBoxMenuItem("地名", true);
-		item2_1_2.setActionCommand("labelCity");
-		item2_1_2.addActionListener(control);
-		itemViewLabel.add(item2_1_2);
+		final JCheckBoxMenuItem menuViewLabelCityVisible = new JCheckBoxMenuItem("地名", true);
+		menuViewLabelCityVisible.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setCityLabelVisible(menuViewLabelCityVisible.isSelected());
+				panel.repaint();
+			}
+		});
+		menuViewLabel.add(menuViewLabelCityVisible);
 		
-		JCheckBoxMenuItem menuViewLabelArea = new JCheckBoxMenuItem("都道府県/市区町村", true);
-		menuViewLabelArea.setActionCommand("label_govt");
-		menuViewLabelArea.addActionListener(control);
-		itemViewLabel.add(menuViewLabelArea);
-		
-		itemViewLabel.addSeparator();
+		menuViewLabel.addSeparator();
 	
 		final JCheckBoxMenuItem menuViewLabelTextAntialiasing = new JCheckBoxMenuItem("テキストアンチエイリアス", panel.isTextAntialiasing());
 		menuViewLabelTextAntialiasing.addActionListener(new ActionListener() {
@@ -79,7 +94,7 @@ public class MapMenu extends JMenuBar {
 				panel.repaint();
 			}
 		});
-		itemViewLabel.add(menuViewLabelTextAntialiasing);
+		menuViewLabel.add(menuViewLabelTextAntialiasing);
 		
 		final JCheckBoxMenuItem menuViewLabelTextShadow = new JCheckBoxMenuItem("ラベルに影をつける", panel.isLabelShadowVisible());
 		menuViewLabelTextShadow.addActionListener(new ActionListener() {
@@ -89,18 +104,18 @@ public class MapMenu extends JMenuBar {
 				panel.repaint();
 			}
 		});
-		itemViewLabel.add(menuViewLabelTextShadow);
+		menuViewLabel.add(menuViewLabelTextShadow);
 
-		itemViewLabel.addSeparator();
+		menuViewLabel.addSeparator();
 		
 		final JCheckBoxMenuItem itemViewLabelFailure = new JCheckBoxMenuItem("配置失敗の表示", false);
 		itemViewLabelFailure.addActionListener(control);
 		itemViewLabelFailure.setActionCommand("label_failure");
-		itemViewLabel.add(itemViewLabelFailure);
+		menuViewLabel.add(itemViewLabelFailure);
 
 		menuView.addSeparator();
 		
-		final JCheckBoxMenuItem menuViewRailway = new JCheckBoxMenuItem("鉄道表示", panel.isRailwayVisible());
+		final JCheckBoxMenuItem menuViewRailway = new JCheckBoxMenuItem("鉄道路線表示", panel.isRailwayVisible());
 		menuViewRailway.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -109,6 +124,16 @@ public class MapMenu extends JMenuBar {
 			}
 		});
 		menuView.add(menuViewRailway);
+
+		final JCheckBoxMenuItem menuViewStation = new JCheckBoxMenuItem("鉄道駅表示", panel.isStationVisible());
+		menuViewStation.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setStationVisible(menuViewStation.isSelected());
+				panel.repaint();
+			}
+		});
+		menuView.add(menuViewStation);
 
 		final JCheckBoxMenuItem menuViewBusVisible = new JCheckBoxMenuItem("バス表示", panel.isBusVisible());
 		menuViewBusVisible.addActionListener(new ActionListener() {
@@ -132,7 +157,7 @@ public class MapMenu extends JMenuBar {
 
 		menuView.addSeparator();
 		
-		final JCheckBoxMenuItem menuViewAntialiasing = new JCheckBoxMenuItem("アンチエイリアス", true);
+		final JCheckBoxMenuItem menuViewAntialiasing = new JCheckBoxMenuItem("アンチエイリアス", panel.isAntialiasing());
 		menuViewAntialiasing.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {

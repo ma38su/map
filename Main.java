@@ -1,5 +1,3 @@
-import java.io.File;
-
 import util.Loader;
 
 /**
@@ -14,8 +12,8 @@ import util.Loader;
  */
 public class Main {
 	public static void main(String[] args) {
-		String mapDir = ".data" + File.separatorChar;
-		String libDir = "lib" + File.separatorChar;
+		String mapDir = ".data";
+		String libDir = "lib";
 
 		// 外部JARをロードします。
 		if (Loader.addExternalJar(libDir)) {

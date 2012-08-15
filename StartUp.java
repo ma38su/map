@@ -71,11 +71,9 @@ public class StartUp {
 		String title = version == null ? "KSJ Map" : "KSJ Map ver." + version;
 		frame.setTitle(title);
 
-		final Setting setting = new Setting(mapDir + "setting.ini");
-
 		CodeDatabase codeDB;
 		try {
-			codeDB = new CodeDatabase("/.data/city.csv", mapDir + "city.idx", mapDir + "city.dat");
+			codeDB = new CodeDatabase("/.data/city.csv", "/.data/city.idx", "/.data/city.dat");
 		} catch (IOException e) {
 			codeDB = null;
 			DialogFactory.errorDialog(null, e);
@@ -87,11 +85,6 @@ public class StartUp {
 		MapController controller = new MapController(panel);
 		
 		JMenuBar menu = new MapMenu(panel, controller);
-
-		boolean isFirst = !"true".equalsIgnoreCase(setting.get(Setting.KEY_TERMS));
-		if (isFirst) {
-			DialogFactory.termsDialog(setting);
-		}
 
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLayout(new BorderLayout());
@@ -108,19 +101,14 @@ public class StartUp {
 		try {
 			statusbar.startReading("初期設定");
 
-			FileDatabase fileDB = new FileDatabase(mapDir);
-			if (isFirst) {
-				Log.out(StartUp.class, "delete Cache Files");
-				fileDB.clearCache();
-			}
-			final MapDataManager maps = new MapDataManager(panel, new CellMethod(".data" + File.separatorChar + "index"), fileDB, codeDB, statusbar);
+			final MapDataManager maps = new MapDataManager(panel, new CellMethod(".data" + File.separatorChar + "index"), codeDB, statusbar);
 			statusbar.finishReading();
 
 			statusbar.startReading("READ OpenGIS Worlddata");
-			Polygon[][] world = fileDB.getWorldPolygon();
+			Polygon[][] world = FileDatabase.getWorldPolygon();
 
 			statusbar.startReading("READ 国土数値情報 都道府県界");
-			Polygon[][] prefectures = fileDB.getPrefecturePolygon();
+			Polygon[][] prefectures = FileDatabase.getPrefecturePolygon();
 			Polygon[] prefectureLake = new Polygon[]{prefectures[45][278], prefectures[18][1], prefectures[19][0], prefectures[7][2], prefectures[7][3], prefectures[0][84], prefectures[4][13], prefectures[1][30], prefectures[0][288], prefectures[6][9], prefectures[24][7], prefectures[31][85]};
 			Polygon[] island = new Polygon[]{prefectures[24][5], prefectures[0][82], prefectures[0][83]};
 			statusbar.finishReading();

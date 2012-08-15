@@ -11,13 +11,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import jp.sourceforge.ma38su.util.Log;
-
 import map.ksj.PrefectureCollection;
 import map.ksj.RailwayCollection;
 import view.MapPanel;
 import view.StatusBar;
-import database.FileDatabase;
 import database.CodeDatabase;
 import database.KsjDataManager;
 
@@ -62,9 +59,9 @@ public class MapDataManager extends Thread {
 	 */
 	private final StatusBar statusbar;
 
-	public MapDataManager(MapPanel panel, final CellMethod cell, FileDatabase storage, CodeDatabase db, StatusBar statusbar) {
+	public MapDataManager(MapPanel panel, final CellMethod cell, CodeDatabase db, StatusBar statusbar) {
 		this.db = db;
-		this.ksjMgr = new KsjDataManager(".data"+ File.separatorChar + "org", ".data" + File.separatorChar + "csv", ".data" + File.separatorChar + "serialize");
+		this.ksjMgr = new KsjDataManager(".data"+ File.separatorChar + "org", ".data" + File.separatorChar + "csv");
 		this.mapCity = new HashMap<Integer, DataCity>();
 		this.panel = panel;
 		this.cell = cell;
@@ -72,7 +69,6 @@ public class MapDataManager extends Thread {
 		this.prefecture = new PrefectureCollection[47];
 
 		this.railway = this.ksjMgr.getRailwayCollection();
-		this.prefecture[0] = this.ksjMgr.getPrefectureData(1);
 
 		this.screen = this.panel.getScreen();
 	}
@@ -143,7 +139,6 @@ public class MapDataManager extends Thread {
 	public void run() {
 		Set<Integer> prefSet = new HashSet<Integer>();
 		while (true) {
-			Log.out(this, "running...");
 			try {
 				if (this.panel.mode() > 1) {
 					Rectangle rect;
@@ -154,7 +149,6 @@ public class MapDataManager extends Thread {
 						for (int val : codes.values()) {
 							prefSet.add(val / 1000);
 						}
-						Log.out(this, "codes = " + codes);
 						if (!this.panel.isOperation()) {
 							this.statusbar.startReading("DUMP PREF");
 							this.dumpPrefecture(prefSet);
@@ -180,11 +174,10 @@ public class MapDataManager extends Thread {
 					} while (!this.screen.equals(rect));
 				}
 				synchronized (this.cell) {
-					Log.out(this, "wait");
 					this.cell.wait();
 				}
 			} catch (Exception e) {
-				Log.err(this, e);
+				e.printStackTrace();
 			}
 			prefSet.clear();
 		}

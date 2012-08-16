@@ -418,9 +418,11 @@ public class MapPanel extends ExportableComponent implements Printable {
 				}
 			}
 			
+			RailwayCollection railway = this.maps.getRailwayCollection();
+			Station[] stations = railway.getStations();
+			
 			if (this.isRailwayVisible) {
 
-				RailwayCollection railway = this.maps.getRailwayCollection();
 				
 				float w3 = 7 / this.scale;
 				float w4 = 5 / this.scale;
@@ -453,17 +455,9 @@ public class MapPanel extends ExportableComponent implements Printable {
 				}
 
 				if (this.isStationVisible) {
-					g.setColor(this.COLOR_STATION_BORDER);
-					g.setStroke(new BasicStroke(w3, this.STROKE_CAP, this.STROKE_JOIN));
-					for (Station station : railway.getStations()) {
-						if (this.screen.intersects(station.getBounds())) {
-							station.draw(g);
-						}
-					}
-
 					g.setColor(this.COLOR_STATION);
 					g.setStroke(new BasicStroke(w4, this.STROKE_CAP, this.STROKE_JOIN));
-					for (Station station : railway.getStations()) {
+					for (Station station : stations) {
 						if (this.screen.intersects(station.getBounds())) {
 							station.draw(g);
 						}
@@ -487,8 +481,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 
 			if (this.isStationLabelVisible && this.isRailwayVisible) {
 				g.setFont(FONT_STATION);
-				RailwayCollection railway = this.maps.getRailwayCollection();
-				this.labeling.add(railway.getStations());
+				this.labeling.add(stations);
 			}
 		}
 		g.setTransform(this.baseTrans);

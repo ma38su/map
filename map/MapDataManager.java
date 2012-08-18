@@ -6,16 +6,14 @@ import index.CellMethod;
 import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import map.ksj.PrefectureCollection;
-import map.ksj.RailwayCollection;
+import map.ksj.PrefectureDataset;
+import map.ksj.RailwayDataset;
 import view.MapPanel;
 import view.StatusBar;
-import database.CodeDatabase;
 import database.KsjDataManager;
 
 /**
@@ -28,13 +26,6 @@ public class MapDataManager extends Thread {
 	 * セル型の地域検索クラス
 	 */
 	private final CellMethod cell;
-
-	final CodeDatabase db;
-	
-	/**
-	 * 市区町村データのMap
-	 */
-	private final Map<Integer, DataCity> mapCity;
 	
 	/**
 	 * 都道府県名
@@ -44,36 +35,34 @@ public class MapDataManager extends Thread {
 	/**
 	 * 地図パネルクラス
 	 */
-	final MapPanel panel;
+	private final MapPanel panel;
 
-	private PrefectureCollection[] prefecture;
+	private PrefectureDataset[] prefecture;
 
 	private final KsjDataManager ksjMgr;
 	
 	private Rectangle screen;
 	
-	private final RailwayCollection railway;
+	private final RailwayDataset railway;
 	
 	/**
 	 * ステータスバー
 	 */
 	private final StatusBar statusbar;
 
-	public MapDataManager(MapPanel panel, final CellMethod cell, CodeDatabase db, StatusBar statusbar) {
-		this.db = db;
+	public MapDataManager(MapPanel panel, final CellMethod cell, StatusBar statusbar) {
 		this.ksjMgr = new KsjDataManager(".data"+ File.separatorChar + "org", ".data" + File.separatorChar + "csv");
-		this.mapCity = new HashMap<Integer, DataCity>();
 		this.panel = panel;
 		this.cell = cell;
 		this.statusbar = statusbar;
-		this.prefecture = new PrefectureCollection[47];
+		this.prefecture = new PrefectureDataset[47];
 
-		this.railway = this.ksjMgr.getRailwayCollection();
+		this.railway = this.ksjMgr.getRailwayDataset();
 
 		this.screen = this.panel.getScreen();
 	}
 	
-	public RailwayCollection getRailwayCollection() {
+	public RailwayDataset getRailwayCollection() {
 		return this.railway;
 	}
 
@@ -93,32 +82,8 @@ public class MapDataManager extends Thread {
 		return this.name[i];
 	}
 
-	/**
-	 * 都道府県データ
-	 * @param code
-	 * @return 既読ならtrue、未読ならfalse
-	 */
-	public boolean hasPrefecture(int code) {
-		return this.prefecture[code - 1] != null;
-	}
-	
-	public PrefectureCollection[] getPrefectureDatas() {
+	public PrefectureDataset[] getPrefectureDatas() {
 		return this.prefecture;
-	}
-
-	/**
-	 * 指定した市区町村番号のラベルを読み込みます。
-	 * @param code 市区町村番号
-	 */
-	private void readLabel(int code) {
-		DataCity city = this.mapCity.get(code);
-		if (city == null) {
-			String name = this.db.get(code);
-			city = new DataCity(code, name);
-			synchronized (this.mapCity) {
-				this.mapCity.put(code, city);
-			}
-		}
 	}
 
 	/**
@@ -156,21 +121,6 @@ public class MapDataManager extends Thread {
 						for (int prefCode : prefSet) {
 							this.readPrefecture(prefCode);
 						}
-						if (this.panel.mode() > 2) {
-							for (Map.Entry<CellBounds, Integer> entry : codes.entrySet()) {
-								if (!rect.intersects(this.screen)) {
-									break;
-								}
-								CellBounds bounds = entry.getKey();
-								Integer code = entry.getValue();
-								String strCode = DataCity.cityFormat(code);
-								if (bounds.intersects(this.screen)) {
-									this.statusbar.startReading("READ LABELS: "+ strCode);
-									this.readLabel(code);
-									this.statusbar.finishReading();
-								}
-							}
-						}
 					} while (!this.screen.equals(rect));
 				}
 				synchronized (this.cell) {
@@ -181,10 +131,6 @@ public class MapDataManager extends Thread {
 			}
 			prefSet.clear();
 		}
-	}
-
-	public void searchedFinished() {
-		this.panel.repaint();
 	}
 
 	public void wakeup() {

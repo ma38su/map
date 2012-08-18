@@ -35,12 +35,10 @@ import jp.sourceforge.ma38su.util.Log;
 import map.MapDataManager;
 import util.Setting;
 import util.Version;
-import view.DialogFactory;
 import view.MapMenu;
 import view.MapPanel;
 import view.StatusBar;
 import controller.MapController;
-import database.CodeDatabase;
 import database.FileDatabase;
 
 /**
@@ -71,14 +69,6 @@ public class StartUp {
 		String title = version == null ? "KSJ Map" : "KSJ Map ver." + version;
 		frame.setTitle(title);
 
-		CodeDatabase codeDB;
-		try {
-			codeDB = new CodeDatabase("/.data/city.csv", "/.data/city.idx", "/.data/city.dat");
-		} catch (IOException e) {
-			codeDB = null;
-			DialogFactory.errorDialog(null, e);
-			return;
-		}
 		StatusBar statusbar = new StatusBar(" ");
 		MapPanel panel = new MapPanel();
 
@@ -101,7 +91,7 @@ public class StartUp {
 		try {
 			statusbar.startReading("初期設定");
 
-			final MapDataManager maps = new MapDataManager(panel, new CellMethod(".data" + File.separatorChar + "index"), codeDB, statusbar);
+			final MapDataManager maps = new MapDataManager(panel, new CellMethod(".data" + File.separatorChar + "index"), statusbar);
 			statusbar.finishReading();
 
 			statusbar.startReading("READ OpenGIS Worlddata");

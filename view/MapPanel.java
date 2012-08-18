@@ -21,16 +21,15 @@ import util.FixedPoint;
 import util.gui.ExportableComponent;
 
 import labeling.SimpleLabeling;
-import map.DataCity;
 import map.MapDataManager;
 import map.Curve;
-import map.ksj.BusCollection;
+import map.ksj.BusDataset;
 import map.ksj.BusRoute;
 import map.ksj.CityAreas;
 import map.ksj.GmlCurve;
-import map.ksj.PrefectureCollection;
+import map.ksj.PrefectureDataset;
 import map.ksj.RailroadLine;
-import map.ksj.RailwayCollection;
+import map.ksj.RailwayDataset;
 import map.ksj.Station;
 
 import jp.sourceforge.ma38su.util.Log;
@@ -197,11 +196,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 */
 	private boolean isHighway;
 
-	/**
-	 * ラベル表示のフラグ
-	 */
-	private int isLabel;
-	
 	private boolean isLabelFailure;
 
 	private Polygon[] island;
@@ -383,7 +377,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 
 			g.setStroke(new BasicStroke(0.5f / this.scale, this.STROKE_CAP, this.STROKE_JOIN));
 
-			for (PrefectureCollection data : this.maps.getPrefectureDatas()) {
+			for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 				if (data != null && this.screen.intersects(data.getBounds())) {
 					g.setColor(COLOR_GROUND);
 					for (Polygon p : data.getPolygons()) {
@@ -406,9 +400,9 @@ public class MapPanel extends ExportableComponent implements Printable {
 			if (this.isBusVisible) {
 				g.setColor(COLOR_ROAD_BORDER);
 				g.setStroke(roadStroke);
-				for (PrefectureCollection data : this.maps.getPrefectureDatas()) {
+				for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 					if (data != null && this.screen.intersects(data.getBounds())) {
-						BusCollection bus = data.getBusCollection();
+						BusDataset bus = data.getBusDataset();
 						if (bus != null) {
 							for (BusRoute route : bus.getBusRoute()) {
 								route.draw(g);
@@ -418,7 +412,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 				}
 			}
 			
-			RailwayCollection railway = this.maps.getRailwayCollection();
+			RailwayDataset railway = this.maps.getRailwayCollection();
 			Station[] stations = railway.getStations();
 			
 			if (this.isRailwayVisible) {
@@ -469,7 +463,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 			
 			if (this.isCityLabelVisible) {
 				this.setCityFont(g);
-				for (PrefectureCollection data : this.maps.getPrefectureDatas()) {
+				for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 					if (data != null && this.screen.intersects(data.getBounds())) {
 						CityAreas[] areas = data.getAreas();
 						if (areas != null) {
@@ -488,9 +482,9 @@ public class MapPanel extends ExportableComponent implements Printable {
 		g.setStroke(defaultStroke);
 
 		if (this.isBusLabelVisible && mode > 2 && this.isBusVisible) {
-			for (PrefectureCollection data : this.maps.getPrefectureDatas()) {
+			for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 				if (data != null && this.screen.intersects(data.getBounds())) {
-					BusCollection bus = data.getBusCollection();
+					BusDataset bus = data.getBusDataset();
 
 					this.labeling.add(bus.getBusStops());
 				}
@@ -657,50 +651,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	}
 
 	/**
-	 * 市区町村の行政界を描画します。
-	 * @param g 描画するGraphics2D
-	 * @param city 描画する行政界
-	 * @param bg 背景色
-	 * @param line 境界色
-	 */
-	void fillBorder(Graphics2D g, DataCity city) {
-		Polygon[] polygons = city.getPolygon();
-		if (polygons != null) {
-			Polygon[] tmp = new Polygon[polygons.length];
-			g.setColor(this.COLOR_GROUND);
-			for (int i = 0; i < polygons.length; i++) {
-				if(polygons[i].getBounds().intersects(this.screen)) {
-					int[] aryX = polygons[i].xpoints;
-					int[] aryY = polygons[i].ypoints;
-	
-					int[] polygonX = new int[polygons[i].npoints];
-					int[] polygonY = new int[polygons[i].npoints];
-	
-					for (int j = 0; j < polygons[i].npoints; j++) {
-						polygonX[j] = (int)((aryX[j] - this.screen.x) * this.scale);
-						polygonY[j] = this.getHeight() - (int)((aryY[j] - this.screen.y) * this.scale);
-					}
-					tmp[i] = new Polygon(polygonX, polygonY, polygonX.length);
-					g.fillPolygon(tmp[i]);
-				}
-			}
-			g.setColor(this.COLOR_GROUND_BORDER);
-			for (Polygon p : tmp) {
-				if (p != null) {
-					g.drawPolygon(p);
-				}
-			}
-			g.setColor(Color.BLACK);
-			String name = city.getName();
-			if (name != null && (this.isLabel & MapPanel.lABEL_PLACE_GOVT) != 0) {
-				int x = (int) ((city.getX() - this.screen.x) * this.scale);
-				int y = this.getHeight() - (int) ((city.getY() - this.screen.y) * this.scale);
-				this.labeling.add(name, x, y, true);
-			}
-		}
-	}
-
-	/**
 	 * ポリゴンを描画します。
 	 * @param g 描画するGraphics2D
 	 * @param polygons 描画するポリゴン
@@ -807,7 +757,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		this.prefectures = prefectures;
 		this.lake = lake;
 		this.island = island;
-		this.isLabel = 15;
 
 		this.isAntialiasing = false;
 		this.isOperation = false;

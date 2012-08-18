@@ -1,4 +1,4 @@
-package database;
+package map;
 
 import java.awt.Polygon;
 import java.io.FileOutputStream;

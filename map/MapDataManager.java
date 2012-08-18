@@ -10,11 +10,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import map.KsjDataManager;
 import map.ksj.PrefectureDataset;
 import map.ksj.RailwayDataset;
 import view.MapPanel;
 import view.StatusBar;
-import database.KsjDataManager;
 
 /**
  * 地図データ管理クラス
@@ -110,8 +110,8 @@ public class MapDataManager extends Thread {
 					do {
 						rect = new Rectangle(this.screen);
 						this.statusbar.startReading("SEARCH AREA");
-						Map<CellBounds, Integer> codes = this.cell.search2(rect);
-						for (int val : codes.values()) {
+						Map<CellBounds, Integer> map = this.cell.search2(rect);
+						for (int val : map.values()) {
 							prefSet.add(val / 1000);
 						}
 						if (!this.panel.isOperation()) {

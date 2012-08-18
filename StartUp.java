@@ -30,16 +30,17 @@ import javax.swing.JMenuBar;
 import javax.swing.JRootPane;
 import javax.swing.UIManager;
 
+import map.FileDatabase;
+import map.MapDataManager;
+
 import jp.sourceforge.ma38su.util.Log;
 
-import map.MapDataManager;
 import util.Setting;
 import util.Version;
 import view.MapMenu;
 import view.MapPanel;
 import view.StatusBar;
 import controller.MapController;
-import database.FileDatabase;
 
 /**
  * 地図描画アプリケーション起動のためのクラス

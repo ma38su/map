@@ -12,17 +12,16 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.GeneralPath;
 import java.awt.print.Printable;
 import java.util.ArrayList;
 import java.util.List;
+
 
 import util.FixedPoint;
 import util.gui.ExportableComponent;
 
 import labeling.SimpleLabeling;
 import map.MapDataManager;
-import map.Curve;
 import map.ksj.BusDataset;
 import map.ksj.BusRoute;
 import map.ksj.CityAreas;
@@ -141,11 +140,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	private int[] cacheY = new int[15000];
 
 	/**
-	 * 市区町村の行政界
-	 */
-	private Color COLOR_CITY_BORDER;
-
-	/**
 	 * 国土数値情報による塗りつぶし色
 	 */
 	private Color COLOR_GROUND;
@@ -162,8 +156,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 
 	private Color COLOR_ROAD;
 
-	private Color COLOR_ROAD_BORDER;
-
 	/**
 	 * 水域を塗りつぶす色
 	 */
@@ -178,8 +170,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * 駅の塗りつぶし色
 	 */
 	private Color COLOR_STATION;
-
-	private Color COLOR_STATION_BORDER;
 
 	/**
 	 * アンチエイリアスのフラグ
@@ -398,7 +388,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 			this.fillPolygon(g, this.island, this.COLOR_GROUND, this.COLOR_GROUND_BORDER);
 
 			if (this.isBusVisible) {
-				g.setColor(COLOR_ROAD_BORDER);
+				g.setColor(COLOR_ROAD);
 				g.setStroke(roadStroke);
 				for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 					if (data != null && this.screen.intersects(data.getBounds())) {
@@ -418,7 +408,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 			if (this.isRailwayVisible) {
 
 				
-				float w3 = 7 / this.scale;
+				//float w3 = 7 / this.scale;
 				float w4 = 5 / this.scale;
 
 				for (RailroadLine line : railway.getOtherLines()) {
@@ -481,11 +471,11 @@ public class MapPanel extends ExportableComponent implements Printable {
 		g.setTransform(this.baseTrans);
 		g.setStroke(defaultStroke);
 
-		if (this.isBusLabelVisible && mode > 2 && this.isBusVisible) {
+		if (this.isBusLabelVisible && mode >= 2 && this.isBusVisible) {
+			g.setFont(FONT_STATION);
 			for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 				if (data != null && this.screen.intersects(data.getBounds())) {
 					BusDataset bus = data.getBusDataset();
-
 					this.labeling.add(bus.getBusStops());
 				}
 			}
@@ -591,65 +581,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		return Math.abs(6378137 * (sx0 - sx) / FixedPoint.SHIFT / 180 * Math.PI * Math.cos(sy / FixedPoint.SHIFT * Math.PI / 180));
 	}
 	
-	/**
-	 * GeneralPathに展開
-	 * 
-	 * @param curves 展開する曲線の配列
-	 * @param path 展開されたGeneralPath
-	 */
-	private void extractGeneralPath(final Curve[] curves, final GeneralPath path) {
-		if (curves != null) {
-			for (final Curve curve : curves) {
-				int[] aryX = curve.getArrayX();
-				int[] aryY = curve.getArrayY();
-
-				int x = (int) ((aryX[0] - this.screen.x) * this.scale);
-				int y = this.getHeight() - (int) ((aryY[0] - this.screen.y) * this.scale);
-				path.moveTo(x, y);
-
-				for (int i = 1; i < aryX.length; i++) {
-					x = (int) ((aryX[i] - this.screen.x) * this.scale);
-					y = this.getHeight() - (int) ((aryY[i] - this.screen.y) * this.scale);
-					path.lineTo(x, y);
-				}
-			}
-		}
-	}
-
-	/**
-	 * 道路データをGeneralPathに展開する
-	 * @param path 展開先のGeneralPath
-	 * @param curves 道路データ
-	 */
-	private void extractRoadway(GeneralPath path, GmlCurve[] curves) {
-		for (GmlCurve curve : curves) {
-
-			int length = curve.getArrayLength();
-			int[] aryX = curve.getArrayX();
-			int[] aryY = curve.getArrayY();
-
-			int x0 = aryX[0];
-			int y0 = aryY[0];
-
-			path.moveTo(x0, y0);
-
-			for (int i = 1; i < length; i++) {
-				
-				int x = aryX[i];
-				int y = aryY[i];
-
-				// 表示領域外であれば次へ
-				if (this.screen.intersectsLine(x0, y0, x, y)) {
-					path.lineTo(x, y);
-				} else {
-					path.moveTo(x, y);
-				}
-				x0 = x;
-				y0 = y;
-			}
-		}
-	}
-
 	/**
 	 * ポリゴンを描画します。
 	 * @param g 描画するGraphics2D
@@ -890,16 +821,13 @@ public class MapPanel extends ExportableComponent implements Printable {
 	}
 	
 	public void setDefaultStyle() {
-		this.COLOR_CITY_BORDER = new Color(161, 159, 156);
 		this.COLOR_GROUND = new Color(242, 239, 233);
 		this.COLOR_GROUND_BORDER = new Color(128, 128, 128);
 		this.COLOR_OTHER_RAIL = new Color(110, 110, 110);
 		this.COLOR_SEA = new Color(153, 179, 204);
 		this.COLOR_SEA_BORDER = this.COLOR_SEA.darker();
 		this.COLOR_STATION = new Color(242, 133, 133);
-		this.COLOR_STATION_BORDER = new Color(169, 93, 93);
-		this.COLOR_ROAD = Color.WHITE;
-		this.COLOR_ROAD_BORDER = Color.LIGHT_GRAY;
+		this.COLOR_ROAD = Color.LIGHT_GRAY;
 		this.COLOR_RAILBASE = Color.BLACK;
 	}
 

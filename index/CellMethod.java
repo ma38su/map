@@ -99,7 +99,7 @@ public class CellMethod {
 	public SortedMap<CellBounds, Integer> search2(final Rectangle rect) {
 		SortedMap<CellBounds, Integer> map = new TreeMap<CellBounds, Integer>(new Comparator<CellBounds>() {
 			public int compare(CellBounds o1, CellBounds o2) {
-				return o2.getOverlapArea(rect) - o1.getOverlapArea(rect);
+				return o1.getOverlapArea(rect) - o2.getOverlapArea(rect);
 			}
 		});
 		int x = rect.x - this.x;
@@ -156,7 +156,7 @@ public class CellMethod {
 		}
 		return map;
 	}
-	
+
 	/**
 	 * 範囲検索
 	 * @param rect 検索範囲

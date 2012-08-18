@@ -65,7 +65,7 @@ public class MapMenu extends JMenuBar {
 		menuViewLabel.add(menuViewLabelStationVisible);
 
 		final JCheckBoxMenuItem menuViewLabelBusVisible = new JCheckBoxMenuItem("バス", panel.isBusLabelVisible());
-		menuViewLabelStationVisible.addActionListener(new ActionListener() {
+		menuViewLabelBusVisible.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				panel.setBusLabelVisible(menuViewLabelBusVisible.isSelected());

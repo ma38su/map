@@ -16,7 +16,6 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
-import util.Setting;
 import util.Version;
 
 /**
@@ -127,19 +126,4 @@ public class DialogFactory {
 		JOptionPane.showMessageDialog(null, text, title, JOptionPane.INFORMATION_MESSAGE);
 	}
 	
-	/**
-	 * 地図データの利用についてを読んでもらうために表示する。
-	 * @param setting 
-	 */
-	public static void termsDialog(Setting setting) {
-		String title = "KSJ Map ver."+ Version.get("/history.txt");
-		JPanel text = new JPanel(new GridLayout(0, 1, 0, 0));
-		text.add(new JLabel("本ソフトウェア利用の前に必ずお読みください。"));
-		text.add(new JLabel("同意いただいた方のみご利用いただけます。"));
-		int ret = JOptionPane.showOptionDialog(null, text, title, JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, new String[]{"同意する", "同意しない"}, null);
-		if (ret != JOptionPane.YES_OPTION) {
-			System.exit(0);
-		}
-		setting.set(Setting.KEY_TERMS, "true");
-	}
 }

@@ -1,4 +1,4 @@
-package jp.sourceforge.ma38su.util;
+package util;
 
 /**
  * 正規化を行うためのインターフェース

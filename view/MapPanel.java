@@ -15,6 +15,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.print.Printable;
 
 import util.FixedPoint;
+import util.Log;
 import util.gui.ExportableComponent;
 
 import labeling.SimpleLabeling;
@@ -28,7 +29,6 @@ import map.ksj.RailroadLine;
 import map.ksj.RailwayDataset;
 import map.ksj.Station;
 
-import jp.sourceforge.ma38su.util.Log;
 
 /**
  * 地図データを表示するためのパネル
@@ -58,8 +58,8 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 */
 	private static final float[] MODE_SCALE = {
 			0.000020f,	// 0
-			0.000100f,	// 1
-			0.001000f,	// 2
+			0.000500f,	// 1
+			0.002000f,	// 2
 	};
 	
 	/**
@@ -244,7 +244,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 
 		Stroke defaultStroke = g.getStroke();
 
-		int mode = mode();
+		int mode = getMode();
 
 		this.labeling.set(MODE_LABEL[mode], 5, 2);
 		this.labeling.set(String.format("SCALE: %.1fµ", (this.scale * 1000 * 1000)), 5, 17);
@@ -278,7 +278,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 			if (!this.isOperation && this.isAntialiasing) {
 				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			}
-
 		} else {
 			if (!this.isOperation && this.isAntialiasing) {
 				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -317,7 +316,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 			this.fillPolygon(g, this.lake, this.COLOR_SEA, this.COLOR_SEA_BORDER);
 			this.fillPolygon(g, this.island, this.COLOR_GROUND, this.COLOR_GROUND_BORDER);
 
-			if (this.isBusVisible) {
+			if (this.isBusVisible && mode >= 3) {
 				g.setColor(COLOR_ROAD);
 				g.setStroke(roadStroke);
 				for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
@@ -325,88 +324,81 @@ public class MapPanel extends ExportableComponent implements Printable {
 						BusDataset bus = data.getBusDataset();
 						if (bus != null) {
 							for (BusRoute route : bus.getBusRoute()) {
-								route.draw(g);
+								if (this.screen.intersects(route.getBounds())) {
+									route.draw(g);
+								}
+							}
+							if (this.isBusLabelVisible) {
+								this.labeling.add(bus.getBusStops());
 							}
 						}
 					}
 				}
 			}
 			
-			RailwayDataset railway = this.maps.getRailwayCollection();
-			Station[] stations = railway.getStations();
-			
-			if (this.isRailwayVisible) {
-
+			if (mode >= 2) {
+				RailwayDataset railway = this.maps.getRailwayCollection();
+				Station[] stations = railway.getStations();
 				
-				//float w3 = 7 / this.scale;
-				float w4 = 5 / this.scale;
+				if (this.isRailwayVisible) {
+					
+					//float w3 = 7 / this.scale;
+					float w4 = 5 / this.scale;
 
-				for (RailroadLine line : railway.getOtherLines()) {
-					for (GmlCurve curve : line.getCurves()) {
-						if (this.screen.intersects(curve.getBounds())) {
-							g.setStroke(borderStroke);
-							g.setColor(COLOR_OTHER_RAIL);
-							curve.draw(g);
+					for (RailroadLine line : railway.getOtherLines()) {
+						for (GmlCurve curve : line.getCurves()) {
+							if (this.screen.intersects(curve.getBounds())) {
+								g.setStroke(borderStroke);
+								g.setColor(COLOR_OTHER_RAIL);
+								curve.draw(g);
+							}
+						}
+					}
+
+					for (RailroadLine line : railway.getJrLines()) {
+						for (GmlCurve curve : line.getCurves()) {
+							if (this.screen.intersects(curve.getBounds())) {
+								g.setStroke(borderStroke);
+								g.setColor(COLOR_RAILBASE);
+								curve.draw(g);
+								g.setColor(Color.WHITE);
+								g.setStroke(dashStroke);
+								curve.draw(g);
+							}
+						}
+					}
+
+					if (this.isStationVisible) {
+						g.setColor(this.COLOR_STATION);
+						g.setStroke(new BasicStroke(w4, this.STROKE_CAP, this.STROKE_JOIN));
+						for (Station station : stations) {
+							if (this.screen.intersects(station.getBounds())) {
+								station.draw(g);
+							}
+						}
+						if (this.isStationLabelVisible) {
+							this.labeling.add(stations);
 						}
 					}
 				}
-
-				for (RailroadLine line : railway.getJrLines()) {
-					for (GmlCurve curve : line.getCurves()) {
-						if (this.screen.intersects(curve.getBounds())) {
-							g.setStroke(borderStroke);
-							g.setColor(COLOR_RAILBASE);
-							curve.draw(g);
-						}
-					}
-					for (GmlCurve curve : line.getCurves()) {
-						if (this.screen.intersects(curve.getBounds())) {
-							g.setColor(Color.WHITE);
-							g.setStroke(dashStroke);
-							curve.draw(g);
+				g.setStroke(defaultStroke);
+				g.setTransform(this.baseTrans);
+				
+				if (this.isCityLabelVisible) {
+					for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
+						if (data != null && this.screen.intersects(data.getBounds())) {
+							CityAreas[] areas = data.getAreas();
+							if (areas != null) {
+								this.labeling.add(areas);
+							}
 						}
 					}
 				}
-
-				if (this.isStationVisible) {
-					g.setColor(this.COLOR_STATION);
-					g.setStroke(new BasicStroke(w4, this.STROKE_CAP, this.STROKE_JOIN));
-					for (Station station : stations) {
-						if (this.screen.intersects(station.getBounds())) {
-							station.draw(g);
-						}
-					}
-				}
-			}
-			g.setStroke(defaultStroke);
-			g.setTransform(this.baseTrans);
-			
-			if (this.isCityLabelVisible) {
-				for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
-					if (data != null && this.screen.intersects(data.getBounds())) {
-						CityAreas[] areas = data.getAreas();
-						if (areas != null) {
-							this.labeling.add(areas);
-						}
-					}
-				}
-			}
-
-			if (this.isStationLabelVisible && this.isRailwayVisible) {
-				this.labeling.add(stations);
 			}
 		}
+
 		g.setTransform(this.baseTrans);
 		g.setStroke(defaultStroke);
-
-		if (this.isBusLabelVisible && mode >= 2 && this.isBusVisible) {
-			for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
-				if (data != null && this.screen.intersects(data.getBounds())) {
-					BusDataset bus = data.getBusDataset();
-					this.labeling.add(bus.getBusStops());
-				}
-			}
-		}
 
 		this.drawRuler(g);
 
@@ -423,7 +415,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 */
 	private void drawAxis(Graphics2D g) {
 		int step;
-		switch (this.mode()) {
+		switch (this.getMode()) {
 			case 0: step = 10;
 			break;
 			case 3: step = 1;
@@ -631,10 +623,10 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * </ul>
 	 * @return 地図の表示状態
 	 */
-	public int mode() {
+	public int getMode() {
 		int i = 0;
 		do {
-			if (Float.compare(this.scale, MapPanel.MODE_SCALE[i]) > 0) {
+			if (Float.compare(this.scale, MapPanel.MODE_SCALE[i]) < 0) {
 				break;
 			}
 		} while (++i < MapPanel.MODE_SCALE.length);

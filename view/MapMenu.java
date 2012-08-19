@@ -12,7 +12,8 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
 
-import jp.sourceforge.ma38su.gui.Output;
+import util.gui.Output;
+
 
 import controller.MapController;
 

@@ -2,7 +2,8 @@ package view;
 
 import javax.swing.JLabel;
 
-import jp.sourceforge.ma38su.util.Log;
+import util.Log;
+
 
 /**
  * JLabelを継承したステータスバー

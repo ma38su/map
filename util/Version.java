@@ -7,7 +7,6 @@ import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jp.sourceforge.ma38su.util.Log;
 
 /**
  * バージョン情報

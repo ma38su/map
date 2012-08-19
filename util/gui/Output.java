@@ -1,4 +1,4 @@
-package jp.sourceforge.ma38su.gui;
+package util.gui;
 
 import java.awt.FlowLayout;
 import java.awt.Graphics2D;
@@ -39,10 +39,10 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
-import util.gui.ExportableComponent;
+import util.GeneralFileFilter;
+import util.Log;
 
-import jp.sourceforge.ma38su.util.GeneralFileFilter;
-import jp.sourceforge.ma38su.util.Log;
+
 
 /**
  * 出力用メソッド

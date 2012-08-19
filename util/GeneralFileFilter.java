@@ -1,4 +1,4 @@
-package jp.sourceforge.ma38su.util;
+package util;
 
 import java.io.File;
 import java.util.List;

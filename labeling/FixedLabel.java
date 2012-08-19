@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Shape;
+import java.awt.Stroke;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 
@@ -13,6 +14,10 @@ import java.awt.font.GlyphVector;
  * @author ma38su
  */
 public class FixedLabel {
+
+	private static final Stroke SHADOW_STROKE = new BasicStroke(4f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL);
+	
+	private static final Stroke BASIC_STROKE = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
 
 	/**
 	 * ラベルの文字列
@@ -42,35 +47,28 @@ public class FixedLabel {
 	}
 	
 	/**
-	 * 白抜き文字を描画します。
+	 * 影をつけてラベルを描画
 	 * @param g
-	 * @param border 
-	 * @param fill 
-	 * @param isShape 
+	 * @param fill フォントの色
+	 * @param border 影の色
 	 */
-	void draw(Graphics2D g, Color fill, Color border, boolean isShape) {
+	void draw(Graphics2D g, Color fill, Color border) {
 		Font font = g.getFont();
 		FontRenderContext render = g.getFontRenderContext();
 		GlyphVector glyph = font.createGlyphVector(render, this.name);
 		g.setColor(border);
-		// TODO
-		g.setStroke(new BasicStroke(4f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL));
+
+		g.setStroke(SHADOW_STROKE);
 		Shape shape = glyph.getOutline(this.x, this.y);
 		g.draw(shape);
 		g.setColor(fill);
 
-		BasicStroke stroke = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-		if (isShape) {
-			g.fill(shape);
-			g.setStroke(stroke);
-		} else {
-			g.setStroke(stroke);
-			g.drawString(this.name, this.x, this.y);
-		}
+		g.setStroke(BASIC_STROKE);
+		g.drawString(this.name, this.x, this.y);
 	}
 
 	/**
-	 * ラベルを描画します。
+	 * ラベルを描画
 	 * @param g
 	 * @param border 
 	 * @param fill 
@@ -79,22 +77,6 @@ public class FixedLabel {
 		g.drawString(this.name, this.x, this.y);
 	}
 
-	/**
-	 * ラベルを描画します。
-	 * @param g
-	 * @param color 
-	 * @param shadow 
-	 */
-	public void drawSimple(Graphics2D g, Color color, Color shadow) {
-		g.setColor(shadow);
-		g.drawString(this.name, this.x + 1, this.y + 1);
-		g.drawString(this.name, this.x + 1, this.y);
-		g.drawString(this.name, this.x, this.y + 1);
-		g.setColor(color);
-		g.drawString(this.name, this.x, this.y);
-	}
-
-	
 	/**
 	 * ラベルの文字列を取得します。
 	 * @return ラベルの文字列

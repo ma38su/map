@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jp.sourceforge.ma38su.util.Log;
+import util.Log;
+
 
 /**
  * ラベル候補

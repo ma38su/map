@@ -1,4 +1,4 @@
-package jp.sourceforge.ma38su.gui;
+package util.gui;
 
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -10,7 +10,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.PlainDocument;
 
-import jp.sourceforge.ma38su.util.Log;
+import util.Log;
+
 
 /**
  * JTextFormatのサイズの比を維持するためのCaretListenerです。

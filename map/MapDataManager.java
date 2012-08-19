@@ -105,7 +105,7 @@ public class MapDataManager extends Thread {
 		Set<Integer> prefSet = new HashSet<Integer>();
 		while (true) {
 			try {
-				if (this.panel.mode() > 1) {
+				if (this.panel.getMode() > 1) {
 					Rectangle rect;
 					do {
 						rect = new Rectangle(this.screen);

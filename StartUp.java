@@ -33,9 +33,8 @@ import javax.swing.UIManager;
 import map.FileDatabase;
 import map.MapDataManager;
 
-import jp.sourceforge.ma38su.util.Log;
 
-import util.Setting;
+import util.Log;
 import util.Version;
 import view.MapMenu;
 import view.MapPanel;
@@ -66,7 +65,6 @@ public class StartUp {
 		JFrame frame = new JFrame();
 
 		String version = Version.get("/history.txt");
-		Setting.setVersion(version);
 		String title = version == null ? "KSJ Map" : "KSJ Map ver." + version;
 		frame.setTitle(title);
 

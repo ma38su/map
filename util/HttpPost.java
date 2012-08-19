@@ -9,7 +9,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Map;
 
-import jp.sourceforge.ma38su.util.Log;
 
 /**
  * URLへPostで情報を送信するためのクラス

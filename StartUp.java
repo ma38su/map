@@ -21,18 +21,13 @@ import index.CellMethod;
 
 import java.awt.BorderLayout;
 import java.awt.GraphicsEnvironment;
-import java.awt.Polygon;
 import java.io.File;
 import java.io.IOException;
 
 import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JRootPane;
 import javax.swing.UIManager;
 
-import map.FileDatabase;
 import map.MapDataManager;
-
 
 import util.Log;
 import util.Version;
@@ -54,7 +49,6 @@ public class StartUp {
 
 		Log.isDebug = false;
 
-		new JRootPane();
 		try {
 			String lf = UIManager.getSystemLookAndFeelClassName();
 			Log.out(StartUp.class, "set Look&Fell: "+ lf);
@@ -73,13 +67,11 @@ public class StartUp {
 
 		MapController controller = new MapController(panel);
 		
-		JMenuBar menu = new MapMenu(panel, controller);
-
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLayout(new BorderLayout());
 		frame.add(statusbar, BorderLayout.SOUTH);
 		frame.add(panel, BorderLayout.CENTER);
-		frame.add(menu, BorderLayout.NORTH);
+		frame.add(new MapMenu(panel, controller), BorderLayout.NORTH);
 
 		GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
 		frame.setBounds(env.getMaximumWindowBounds());
@@ -89,27 +81,10 @@ public class StartUp {
 
 		try {
 			statusbar.startReading("初期設定");
-
-			final MapDataManager maps = new MapDataManager(panel, new CellMethod(".data" + File.separatorChar + "index"), statusbar);
-			statusbar.finishReading();
-
-			statusbar.startReading("READ OpenGIS Worlddata");
-			Polygon[][] world = FileDatabase.getWorldPolygon();
-
-			statusbar.startReading("READ 国土数値情報 都道府県界");
-			Polygon[][] prefectures = FileDatabase.getPrefecturePolygon();
-			Polygon[] prefectureLake = new Polygon[]{prefectures[45][278], prefectures[18][1], prefectures[19][0], prefectures[7][2], prefectures[7][3], prefectures[0][84], prefectures[4][13], prefectures[1][30], prefectures[0][288], prefectures[6][9], prefectures[24][7], prefectures[31][85]};
-			Polygon[] island = new Polygon[]{prefectures[24][5], prefectures[0][82], prefectures[0][83]};
-			statusbar.finishReading();
-
-			panel.init(maps, world, prefectures, prefectureLake, island);
-			panel.repaint();
-
+			panel.init(new MapDataManager(mapDir, panel, new CellMethod(mapDir + File.separatorChar + "index"), statusbar));
 		} catch (IOException e) {
 			statusbar.startReading("ERROR "+ e.getMessage());
 		}
-
-		statusbar.finishReading();
 		panel.addMouseListener(controller);
 		panel.addMouseMotionListener(controller);
 		panel.addMouseWheelListener(controller);

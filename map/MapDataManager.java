@@ -3,9 +3,11 @@ package map;
 import index.CellBounds;
 import index.CellMethod;
 
+import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -50,8 +52,8 @@ public class MapDataManager extends Thread {
 	 */
 	private final StatusBar statusbar;
 
-	public MapDataManager(MapPanel panel, final CellMethod cell, StatusBar statusbar) {
-		this.ksjMgr = new KsjDataManager(".data"+ File.separatorChar + "org", ".data" + File.separatorChar + "csv");
+	public MapDataManager(String dir, MapPanel panel, final CellMethod cell, StatusBar statusbar) {
+		this.ksjMgr = new KsjDataManager(dir + File.separatorChar + "org", dir + File.separatorChar + "csv");
 		this.panel = panel;
 		this.cell = cell;
 		this.statusbar = statusbar;
@@ -133,9 +135,64 @@ public class MapDataManager extends Thread {
 		}
 	}
 
+	/**
+	 * FreeGISの世界地図データ
+	 * [0] 日本以外
+	 * [1] 日本のみ
+	 */
+	private static final String worldPolygon = "/.data/freegis.dat";
+
 	public void wakeup() {
 		synchronized (this.cell) {
 			this.cell.notifyAll();
 		}
+	}
+	
+	/**
+	 * 都道府県界のデータ
+	 */
+	private static final String prefPolygon = "/.data/prefecture.dat";
+
+	/**
+	 * 世界地図データの取得
+	 * @return 世界地図データ
+	 */
+	public Polygon[][] getWorldPolygon() {
+		return readSerializableArchive(worldPolygon, Polygon[][].class);
+	}
+
+	/**
+	 * 日本の都道府県データを取得します。
+	 * @return 都道府県データ
+	 */
+	public Polygon[][] getPrefecturePolygon() {
+		return readSerializableArchive(prefPolygon, Polygon[][].class);
+	}
+
+	public Polygon[] getJapan() {
+		return this.ksjMgr.getJapanPolygon();
+	}
+	
+	/**
+	 * @param path
+	 * @param c
+	 * @return 読み込んだインスタンス
+	 */
+	public static <T> T readSerializableArchive(String path, Class<T> c) {
+		T obj = null;
+		try {
+			ObjectInputStream in = null;
+			try {
+				in = new ObjectInputStream(System.class.getResourceAsStream(path));
+				obj = c.cast(in.readObject());
+			} finally {
+				if (in != null) {
+					in.close();
+				}
+			}
+		} catch (Exception e) {
+			obj = null;
+		}
+		return obj;
 	}
 }

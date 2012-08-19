@@ -200,6 +200,10 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 */
 	private float scale = 0.005f;
 	
+	private final AffineTransform trans = new AffineTransform();
+
+	private static final AffineTransform DEFAULT_TRANSFORM = new AffineTransform(1, 0, 0, 1, 0, 0);
+
 	/**
 	 * スクリーンサイズ
 	 */
@@ -217,21 +221,22 @@ public class MapPanel extends ExportableComponent implements Printable {
 
 	private Color COLOR_RAILBASE;
 
+//	private Polygon[] japan;
+
 	/**
 	 * 地図パネル
 	 */
 	public MapPanel() {
 		this.isAxis = false;
-		this.isRailwayVisible = false;
-		this.isBusVisible = false;
+		this.isRailwayVisible = true;
+		this.isBusVisible = true;
+		this.isStationVisible = true;
+		this.isAntialiasing = true;
 
 		this.screen = new Rectangle();
 		this.labeling = new SimpleLabeling(this.screen);
 		this.setDefaultStyle();
 	}
-	
-	private final AffineTransform trans = new AffineTransform();
-	private final AffineTransform baseTrans = new AffineTransform(1, 0, 0, 1, 0, 0);
 	
 	/**
 	 * 地図の描画
@@ -241,6 +246,8 @@ public class MapPanel extends ExportableComponent implements Printable {
 	public void draw(Graphics2D g) {
 		
 		this.labeling.init(g, this.scale, this.getWidth(), this.getHeight());
+
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, (!this.isOperation && this.isAntialiasing) ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF);
 
 		Stroke defaultStroke = g.getStroke();
 
@@ -255,41 +262,25 @@ public class MapPanel extends ExportableComponent implements Printable {
 		this.trans.setTransform(scale, 0, 0, - scale, - scale * this.screen.x, this.screen.y * this.scale + this.getHeight());
 		g.setTransform(this.trans);
 
-		g.setColor(this.COLOR_GROUND);
-		
 		if (mode == 0) {
-			g.setColor(this.COLOR_GROUND);
 			this.fillPolygonWorld(g, this.world[0]);
 			this.fillPolygonWorld(g, this.world[1]);
-			if (!this.isOperation) {
-				if (this.isAntialiasing) {
-					g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-				}
-			}
 		} else if (mode == 1) {
 
 			this.fillPolygonWorld(g, this.world[0]);
 
+			//this.fillPolygon(g, this.japan, COLOR_GROUND, COLOR_GROUND_BORDER);
 			for (int i = 0; i < this.prefectures.length; i++) {
 				this.fillPrefectures(g, this.maps.getPrefecture(i), this.prefectures[i]);
 			}
 			this.fillPolygon(g, this.lake, this.COLOR_SEA, this.COLOR_SEA_BORDER);
 			this.fillPolygon(g, this.island, this.COLOR_GROUND, this.COLOR_GROUND_BORDER);
-			if (!this.isOperation && this.isAntialiasing) {
-				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			}
 		} else {
-			if (!this.isOperation && this.isAntialiasing) {
-				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			}
-
 			float w1 = 3 / this.scale;
 			float w2 = 2 / this.scale;
 			float w5 = 1 / this.scale;
-//			float w6 = 1.5f / this.scale;
 			
 			Stroke roadStroke = new BasicStroke(w5, this.STROKE_CAP, this.STROKE_JOIN);
-//			Stroke roadBorderStroke = new BasicStroke(w6, this.STROKE_CAP, this.STROKE_JOIN);
 
 			Stroke borderStroke = new BasicStroke(w1, this.STROKE_CAP, this.STROKE_JOIN); 
 			Stroke dashStroke = new BasicStroke(w2, this.STROKE_CAP, this.STROKE_JOIN, 10f, new float[]{w2 * 6, w2 * 6}, 0);
@@ -381,9 +372,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 						}
 					}
 				}
-				g.setStroke(defaultStroke);
-				g.setTransform(this.baseTrans);
-				
 				if (this.isCityLabelVisible) {
 					for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 						if (data != null && this.screen.intersects(data.getBounds())) {
@@ -397,7 +385,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 			}
 		}
 
-		g.setTransform(this.baseTrans);
+		g.setTransform(DEFAULT_TRANSFORM);
 		g.setStroke(defaultStroke);
 
 		this.drawRuler(g);
@@ -511,6 +499,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 		if (polygons == null) {
 			return;
 		}
+		g.setColor(COLOR_GROUND);
 		for (Polygon polygon : polygons) {
 			if(polygon.intersects(this.screen)) {
 				g.fillPolygon(polygon);
@@ -573,28 +562,24 @@ public class MapPanel extends ExportableComponent implements Printable {
 	
 	/**
 	 * 初期設定
-	 * @param setting 設定
 	 * @param map 地図データ管理クラス
-	 * @param world 世界（日本以外）国境ポリゴン
-	 * @param japan 日本国境ポリゴン
-	 * @param prefectures 都道府県ポリゴン
-	 * @param lake 都道府県ポリゴンと重なる水域ポリゴン
-	 * @param island 水域ポリゴンと重なる島などのポリゴン
 	 */
-	public void init(MapDataManager map, Polygon[][] world, Polygon[][] prefectures, Polygon[] lake, Polygon[] island) {
+	public void init(MapDataManager map) {
 		Log.out(this, "init called.");
+
+		this.world = map.getWorldPolygon();
+
+		//this.japan = map.getJapan();
+		this.prefectures = map.getPrefecturePolygon();
+		this.lake = new Polygon[]{prefectures[45][278], prefectures[18][1], prefectures[19][0], prefectures[7][2], prefectures[7][3], prefectures[0][84], prefectures[4][13], prefectures[1][30], prefectures[0][288], prefectures[6][9], prefectures[24][7], prefectures[31][85]};
+		this.island = new Polygon[]{prefectures[24][5], prefectures[0][82], prefectures[0][83]};
 
 		this.maps = map;
 		this.maps.start();
-		
-		this.world = world;
-		this.prefectures = prefectures;
-		this.lake = lake;
-		this.island = island;
 
-		this.isAntialiasing = false;
 		this.isOperation = false;
 		this.moveDefault();
+
 		this.repaint();
 	}
 

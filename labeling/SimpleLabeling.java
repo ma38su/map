@@ -24,10 +24,10 @@ import map.ksj.Station;
  */
 public class SimpleLabeling {
 	
-	private static final int FONT_INFO = 0;
-	private static final int FONT_CITY = 1;
-	private static final int FONT_STATION = 2;
-	private static final int FONT_BUSSTOP = 3;
+	private static final int LABEL_INFO = 0;
+	private static final int LABEL_CITY = 1;
+	private static final int LABEL_STATION = 2;
+	private static final int LABEL_BUSSTOP = 3;
 	
 	/**
 	 * フォント
@@ -88,12 +88,12 @@ public class SimpleLabeling {
 	private float scale;
 		
 	/**
-	 * 描画変換後の表示領域
+	 * スクリーン座標系の表示領域
 	 */
 	private final Rectangle screen;
 	
 	/**
-	 * 描画変換前の表示領域
+	 * 緯度経度座標系（描画変換前）の表示領域
 	 */
 	private final Rectangle screen0;
 
@@ -106,6 +106,9 @@ public class SimpleLabeling {
 	 * テキストアンチエイリアス適用のフラグ
 	 */
 	private boolean isTextAntialiasing;
+	
+	private int r;
+	private int r2;
 
 	/**
 	 * コンストラクタ
@@ -124,15 +127,15 @@ public class SimpleLabeling {
 	}
 	
 	public void add(CityAreas[] areas) {
-		add(FONT_CITY, areas);
+		add(LABEL_CITY, areas);
 	}
 
 	public void add(Station[] stations) {
-		add(FONT_STATION, stations);
+		add(LABEL_STATION, stations);
 	}
 	
 	public void add(BusStop[] stops) {
-		add(FONT_BUSSTOP, stops);
+		add(LABEL_BUSSTOP, stops);
 	}
 		
 	private void add(int type, Label[] labels) {
@@ -145,15 +148,16 @@ public class SimpleLabeling {
 			list = new ArrayList<FixedLabel>();
 			this.fixedLabelMap.put(type, list);
 		}
+		
 		for (Label st : labels) {
+
 			String name = st.getName();
 			int lat = st.getY();
 			int lng = st.getX();
+
 			// 表示領域内のであれば描画する
 			if (this.screen0.contains(lng, lat)) {
 				
-				int r = (int) (2 / scale + 0.5);
-				int r2 = (int) (4 / scale + 0.5);
 				int x = (int) ((lng - this.screen0.x) * this.scale);
 				int y = this.screen.height - (int) ((lat - this.screen0.y) * this.scale);
 
@@ -187,7 +191,7 @@ public class SimpleLabeling {
 					flag = true;
 					break;
 				}
-				if (flag) {
+				if (flag && type != LABEL_STATION) {
 					this.g.setColor(Color.DARK_GRAY);
 					this.g.fillOval(lng - r, lat - r, r2, r2);
 				} else if (this.isLabelFailureVisible) {
@@ -233,14 +237,14 @@ public class SimpleLabeling {
 	 * @param y 
 	 */
 	public void set(String name, int x, int y) {
-		FontMetrics metrics = METRICS[FONT_INFO];
+		FontMetrics metrics = METRICS[LABEL_INFO];
 		int fontAscent = metrics.getAscent();
 		int fontHeight = metrics.getHeight();
 
-		List<FixedLabel> list = this.fixedLabelMap.get(FONT_INFO);
+		List<FixedLabel> list = this.fixedLabelMap.get(LABEL_INFO);
 		if (list == null) {
 			list = new ArrayList<FixedLabel>();
-			this.fixedLabelMap.put(FONT_INFO, list);
+			this.fixedLabelMap.put(LABEL_INFO, list);
 		}
 		// 表示領域内のであれば描画する
 		if (this.screen.contains(x, y)) {
@@ -301,5 +305,8 @@ public class SimpleLabeling {
 		this.screen.height = height;
 		this.lapList.clear();
 		this.fixedLabelMap.clear();
+		
+		this.r = (int) (2 / this.scale + 0.5);
+		this.r2 = (int) (4 / this.scale + 0.5);
 	}
 }

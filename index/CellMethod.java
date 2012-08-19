@@ -59,8 +59,8 @@ public class CellMethod {
 	 * @throws IOException 
 	 */
 	public CellMethod(String dir) throws IOException {
+		this.index = new RandomAccessFile(dir + File.separatorChar + "sdf25k.idx", "r");
 		try {
-			this.index = new RandomAccessFile(dir + File.separatorChar + "sdf25k.idx", "r");
 			this.x = this.index.readInt();
 			this.y = this.index.readInt();
 			int width = this.index.readInt();
@@ -78,10 +78,8 @@ public class CellMethod {
 				this.cellHeight = height / this.cy + 1;
 			}
 		} catch (IOException e) {
-			if (this.index != null) {
-				this.index.close();
-			}
-			throw new IllegalArgumentException(e);
+			this.index.close();
+			throw new IllegalStateException(e);
 		}
 		this.disc = new RandomAccessFile(dir + File.separatorChar + "sdf25k.cell", "r");
 	}

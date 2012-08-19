@@ -18,7 +18,6 @@ import javax.swing.WindowConstants;
 
 import util.Setting;
 import util.Version;
-import controller.MapController;
 
 /**
  * ダイアログを生成するクラス
@@ -31,7 +30,7 @@ public class DialogFactory {
 	 * @param panel 地図パネル
 	 * @param controller コントローラ
 	 */
-	public static void locationDialog(final MapPanel panel, MapController controller) {
+	public static void locationDialog(final MapPanel panel) {
 		final JDialog dialog = new JDialog();
 		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		dialog.setTitle("移動");
@@ -40,13 +39,13 @@ public class DialogFactory {
 		LayoutManager fieldLayout = new FlowLayout(FlowLayout.CENTER, 5, 3);
 		JPanel xFieldPanel = new JPanel(fieldLayout);
 		final JTextField xField = new JTextField(5);
-		xField.setText(Float.toString((int) (controller.getLocationMouseX() * 100) / 100f));
+		xField.setText(String.format("%.02f", panel.getLocationCenterX()));
 		xFieldPanel.add(new JLabel("経度 :"));
 		xFieldPanel.add(xField);
 
 		JPanel yFieldPanel = new JPanel(fieldLayout);
 		final JTextField yField = new JTextField(5);
-		yField.setText(Float.toString((int) (controller.getLocationMouseY() * 100) / 100f));
+		yField.setText(String.format("%.02f", panel.getLocationCenterY()));
 		yFieldPanel.add(new JLabel("緯度 :"));
 		yFieldPanel.add(yField);
 

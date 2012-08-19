@@ -1,7 +1,5 @@
 package controller;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -9,24 +7,13 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 
-import javax.print.PrintException;
-
-import jp.sourceforge.ma38su.gui.Output;
-import jp.sourceforge.ma38su.util.Log;
-
-import view.DialogFactory;
 import view.MapPanel;
 
 /**
  * マウス、キーボードによる操作クラス
  * @author ma38su
  */
-public class MapController implements MouseListener, MouseMotionListener, MouseWheelListener, ActionListener {
-
-	/**
-	 * キーボードによる平行移動感度
-	 */
-	private static final int MOVE_SENSE = 8;
+public class MapController implements MouseListener, MouseMotionListener, MouseWheelListener {
 
 	/**
 	 * マウスがWindow内に入っているかどうか
@@ -56,54 +43,6 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 		this.panel = panel;
 		this.x = panel.getWidth() / 2;
 		this.y = panel.getHeight() / 2;
-	}
-
-	public void actionPerformed(ActionEvent e) {
-		String command = e.getActionCommand();
-		if (command.startsWith("export")) {
-			try {
-				while (!this.panel.isLoaded()) {
-						Thread.sleep(2L);
-				}
-				if (command.endsWith("PNG")) {
-					Output.exportPng(this.panel);
-				}
-			} catch (InterruptedException ex) {
-				Log.err(this, ex);
-			}
-		} else if (command.equals("print")) {
-			try {
-				while (!this.panel.isLoaded()) {
-					Thread.sleep(100L);
-				}
-				Output.print(this.panel);
-			} catch (InterruptedException ex) {
-				Log.err(this, ex);
-			} catch (PrintException ex) {
-				Log.err(this, ex);
-			}
-		} else if (command.startsWith("move_")) {
-			if (command.equals("move_location")) {
-				DialogFactory.locationDialog(this.panel, this);
-			} else {
-				if (command.equals("move_home")) {
-					this.panel.moveDefault();
-				} else if (command.equals("move_right")) {
-					this.panel.moveLocation(-MapController.MOVE_SENSE, 0);
-				} else if (command.equals("move_left")) {
-					this.panel.moveLocation(MapController.MOVE_SENSE, 0);
-				} else if (command.equals("move_up")) {
-					this.panel.moveLocation(0, MapController.MOVE_SENSE);
-				} else if (command.equals("move_down")) {
-					this.panel.moveLocation(0, -MapController.MOVE_SENSE);
-				} else if (command.equals("move_in")) {
-					this.panel.zoom(this.x, this.y, 1);
-				} else if (command.equals("move_out")) {
-					this.panel.zoom(this.x, this.y, -1);
-				}
-				this.panel.repaint(); 
-			}
-		}
 	}
 
 	public float getLocationMouseX() {
@@ -163,6 +102,7 @@ public class MapController implements MouseListener, MouseMotionListener, MouseW
 			this.y = this.panel.getHeight() / 2;
 		}
 		this.panel.setOperation(false);
+		this.panel.repaint();
 	}
 
 	public void mouseWheelMoved(MouseWheelEvent e) {

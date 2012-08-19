@@ -13,9 +13,6 @@ import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.print.Printable;
-import java.util.ArrayList;
-import java.util.List;
-
 
 import util.FixedPoint;
 import util.gui.ExportableComponent;
@@ -40,54 +37,9 @@ import jp.sourceforge.ma38su.util.Log;
 public class MapPanel extends ExportableComponent implements Printable {
 
 	/**
-	 * フォントの種類（論理フォント）
-	 * Serif, SansSerif, Monospaced, Dialog, DialogInput
-	 */
-	private static final String FONT_FAMILY = Font.SANS_SERIF;
-
-	private static final String FONT_FAMILY_CITY = Font.SANS_SERIF;
-	
-	private static final String FONT_FAMILY_PREF = Font.SERIF;
-	
-	/**
-	 * ラベリングに用いるフォント
-	 */
-	public static final Font FONT_INFO = new Font(MapPanel.FONT_FAMILY, Font.PLAIN, 12);
-	
-	/**
-	 * 駅のフォント
-	 */
-	private static final Font FONT_STATION = new Font(MapPanel.FONT_FAMILY, Font.BOLD, 11);
-	
-	/**
-	 * 市区町村名表示フォントの最大サイズ
-	 */
-	private static final int FONTSIZE_CITY_MAX = 38;
-
-	/**
-	 * 都道府県名表示フォントの最大サイズ
-	 */
-	private static final int FONTSIZE_PREFECTURE_MAX = 60;
-
-	/**
-	 * 施設
-	 */
-	public static final int LABEL_FACILITY = 4;
-
-	/**
-	 * 地名
-	 */
-	public static final int LABEL_PLACE = 2;
-
-	/**
 	 * 市区町村名、都道府県名
 	 */
 	public static final int lABEL_PLACE_GOVT = 8;
-
-	/**
-	 * 駅名
-	 */
-	public static final int LABEL_STATION = 1;
 
 	private static final int MAX_SCREEN_X = 154 * FixedPoint.SHIFT;
 
@@ -98,16 +50,27 @@ public class MapPanel extends ExportableComponent implements Printable {
 	private static final int MIN_SCREEN_Y =  20 * FixedPoint.SHIFT;
 	
 	/**
-	 * この倍率以下で国土数値情報の都道府県界を表示します。
+	 * 倍率に対応したモードの番号
+	 * 0: この倍率以下でFreeGISを表示
+	 * 1: この倍率以下で国土数値情報の都道府県界を表示
+	 * 2: この倍率以下で鉄道を表示
+	 * 3: この倍率以下でバス路線を表示
 	 */
-	private static final float MODE_PREF_SCALE  = 0.00010f;
+	private static final float[] MODE_SCALE = {
+			0.000020f,	// 0
+			0.000100f,	// 1
+			0.001000f,	// 2
+	};
 	
-	private static final float MODE_BUS_SCALE  = 0.00050f;
-
 	/**
-	 * この倍率以下でFreeGISを表示します。
+	 * 倍率に対応したモードの説明
 	 */
-	private static final float MODE_WORLD_SCALE = 0.000020f;
+	private static final String[] MODE_LABEL = {
+		"MODE: 世界地図",							// 0
+		"MODE: 国土数値情報（都道府県）",				// 1
+		"MODE: 国土数値情報（都道府県＋鉄道）",		// 2
+		"MODE: 国土数値情報（都道府県＋鉄道＋バス）",	// 3
+	};
 	
 	/**
 	 * 表示倍率の上限
@@ -123,21 +86,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * 表示倍率の変更精度
 	 */
 	private static final float SCALE_SENSE = 0.08f;
-
-	/**
-	 * ポリゴン描画のためのキャッシュ
-	 */
-	private List<Polygon> cachePolygon = new ArrayList<Polygon>();
-
-	/**
-	 * ポリゴン、折れ線描画のためのX座標のキャッシュ
-	 */
-	private int[] cacheX = new int[15000];
-
-	/**
-	 * ポリゴン、折れ線描画のためのY座標のキャッシュ
-	 */
-	private int[] cacheY = new int[15000];
 
 	/**
 	 * 国土数値情報による塗りつぶし色
@@ -172,6 +120,16 @@ public class MapPanel extends ExportableComponent implements Printable {
 	private Color COLOR_STATION;
 
 	/**
+	 * マウス操作のフラグ
+	 */
+	private boolean isOperation;
+
+	/**
+	 * 再描画フラグ
+	 */
+	private boolean isRepaint;
+
+	/**
 	 * アンチエイリアスのフラグ
 	 */
 	private boolean isAntialiasing;
@@ -182,55 +140,39 @@ public class MapPanel extends ExportableComponent implements Printable {
 	private boolean isAxis;
 
 	/**
-	 * 高速道路標示のフラグ
+	 * 都道府県名ラベルの表示フラグ
 	 */
-	private boolean isHighway;
-
-	private boolean isLabelFailure;
-
-	private Polygon[] island;
-
-	/**
-	 * マウス操作のフラグ
-	 */
-	private boolean isOperation;
+	private boolean isCityLabelVisible;
 
 	/**
 	 * 鉄道表示のフラグ
 	 */
 	private boolean isRailwayVisible;
-	
-	/**
-	 * 再描画フラグ
-	 */
-	private boolean isRepaint;
 
 	/**
-	 * 道路の表示
+	 * 駅の表示フラグ
 	 */
-	private boolean isBusVisible;
-
-	private boolean isBusLabelVisible;
-
 	private boolean isStationVisible;
+
+	/**
+	 * 駅のラベルの表示フラグ
+	 */
 	private boolean isStationLabelVisible;
 
 	/**
-	 * ラベルの影の表示有無
+	 * バス路線の表示フラグ
 	 */
-	private boolean isLabelShadowVisible;
-
+	private boolean isBusVisible;
+	
 	/**
-	 * テキストアンチエイリアス
+	 * バス停のラベルの表示フラグ
 	 */
-	private boolean isTextAntialiasing;
+	private boolean isBusLabelVisible;
 
 	/**
 	 * ラベリングアルゴリズム
 	 */
 	private SimpleLabeling labeling;
-
-	private Polygon[] lake;
 
 	/**
 	 * 地図情報管理マップ
@@ -242,7 +184,16 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 */
 	private Image offs;
 	
+	/**
+	 * 世界地図ポリゴン
+	 */
+	private Polygon[][] world;
+
 	private Polygon[][] prefectures;
+	
+	private Polygon[] lake;
+
+	private Polygon[] island;
 	
 	/**
 	 * 地図の表示倍率
@@ -258,10 +209,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 
 	private final int STROKE_JOIN = BasicStroke.JOIN_ROUND;
 
-	/**
-	 * 世界地図ポリゴン
-	 */
-	private Polygon[][] world;
 
 	/**
 	 * 世界地図の標準範囲
@@ -270,32 +217,18 @@ public class MapPanel extends ExportableComponent implements Printable {
 
 	private Color COLOR_RAILBASE;
 
-	private boolean isCityLabelVisible;
-	
 	/**
 	 * 地図パネル
 	 */
 	public MapPanel() {
-		
-		this.isLabelShadowVisible = false;
-		this.isTextAntialiasing = false;
 		this.isAxis = false;
 		this.isRailwayVisible = false;
 		this.isBusVisible = false;
-		this.isHighway = true;
-		this.isLabelFailure = false;
 
 		this.screen = new Rectangle();
 		this.labeling = new SimpleLabeling(this.screen);
 		this.setDefaultStyle();
 	}
-	
-	private static final String[] MODE_LABEL = {
-		"MODE: 世界地図",
-		"MODE: 国土数値情報（都道府県）",
-		"MODE: 国土数値情報（都道府県＋鉄道）",
-		"MODE: 国土数値情報（都道府県＋鉄道＋バス）",
-	};
 	
 	private final AffineTransform trans = new AffineTransform();
 	private final AffineTransform baseTrans = new AffineTransform(1, 0, 0, 1, 0, 0);
@@ -307,20 +240,17 @@ public class MapPanel extends ExportableComponent implements Printable {
 	@Override
 	public void draw(Graphics2D g) {
 		
-		this.labeling.init(g, this.scale, this.getWidth(), this.getHeight(), this.isTextAntialiasing, this.isLabelShadowVisible, this.isLabelFailure);
+		this.labeling.init(g, this.scale, this.getWidth(), this.getHeight());
 
 		Stroke defaultStroke = g.getStroke();
 
 		int mode = mode();
-		g.setFont(MapPanel.FONT_INFO);
 
 		this.labeling.set(MODE_LABEL[mode], 5, 2);
 		this.labeling.set(String.format("SCALE: %.1fµ", (this.scale * 1000 * 1000)), 5, 17);
 
 		g.setColor(this.COLOR_SEA);
 		g.fillRect(0, 0, this.getWidth(), this.getHeight());
-
-		this.setPrefectrueFont(g);
 
 		this.trans.setTransform(scale, 0, 0, - scale, - scale * this.screen.x, this.screen.y * this.scale + this.getHeight());
 		g.setTransform(this.trans);
@@ -452,7 +382,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 			g.setTransform(this.baseTrans);
 			
 			if (this.isCityLabelVisible) {
-				this.setCityFont(g);
 				for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 					if (data != null && this.screen.intersects(data.getBounds())) {
 						CityAreas[] areas = data.getAreas();
@@ -464,7 +393,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 			}
 
 			if (this.isStationLabelVisible && this.isRailwayVisible) {
-				g.setFont(FONT_STATION);
 				this.labeling.add(stations);
 			}
 		}
@@ -472,7 +400,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		g.setStroke(defaultStroke);
 
 		if (this.isBusLabelVisible && mode >= 2 && this.isBusVisible) {
-			g.setFont(FONT_STATION);
 			for (PrefectureDataset data : this.maps.getPrefectureDatas()) {
 				if (data != null && this.screen.intersects(data.getBounds())) {
 					BusDataset bus = data.getBusDataset();
@@ -528,29 +455,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		}
 	}
 	
-	/**
-	 * ポリゴンを描画します。
-	 * @param g 描画するGraphics2D
-	 * @param polygons 描画するポリゴン
-	 */
-	void drawPolygon(Graphics2D g, Polygon[] polygons) {
-		if (polygons == null) {
-			return;
-		}
-		for (Polygon polygon : polygons) {
-			if(polygon.intersects(this.screen)) {
-				int[] aryX = polygon.xpoints;
-				int[] aryY = polygon.ypoints;
-
-				for (int j = 0; j < polygon.npoints; j++) {
-					this.cacheX[j] = (int)((aryX[j] - this.screen.x) * this.scale);
-					this.cacheY[j] = this.getHeight() - (int)((aryY[j] - this.screen.y) * this.scale);
-				}
-				g.drawPolygon(this.cacheX, this.cacheY, polygon.npoints);
-			}
-		}
-	}
-
 	public void drawRuler(Graphics2D g) {
 		g.setColor(Color.BLACK);
 		int width = 100;
@@ -562,7 +466,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		g.drawLine(x0, y, x, y);
 		g.drawLine(x, y, x, y1);
 		double distance = this.distance(x0, x, y);
-		g.setFont(FONT_INFO);
 		FontMetrics metrics = g.getFontMetrics();
 		String rule;
 		if (distance >= 1000) {
@@ -571,7 +474,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 			rule = Integer.toString((int) distance) + "m";
 		}
 		int center = (x0 + x - metrics.stringWidth(rule)) / 2 + 5;
-		g.drawString(rule, center, y -3);
+		this.labeling.set(rule, center, y - 3);
 	}
 	
 	public double distance(int x0, int x, int y) {
@@ -588,7 +491,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * @param bg 背景色
 	 * @param line 境界色
 	 */
-	void fillPolygon(Graphics2D g, Polygon[] polygons, Color bg, Color line) {
+	private void fillPolygon(Graphics2D g, Polygon[] polygons, Color bg, Color line) {
 		if (polygons == null) {
 			return;
 		}
@@ -627,7 +530,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 				g.drawPolygon(polygon);
 			}
 		}
-		this.cachePolygon.clear();
 	}
 
 	/**
@@ -654,9 +556,18 @@ public class MapPanel extends ExportableComponent implements Printable {
 	public double getLocationX(int x) {
 		return (this.screen.x + x / this.scale) / FixedPoint.SHIFT;
 	}
+
+	public double getLocationCenterX() {
+		return (this.screen.x + this.screen.width / 2) / FixedPoint.SHIFT;
+	}
+
 	
 	public double getLocationY(int y) {
 		return (this.screen.y + (this.getHeight() - y) / this.scale) / FixedPoint.SHIFT;
+	}
+
+	public double getLocationCenterY() {
+		return (this.screen.y + this.screen.height / 2) / FixedPoint.SHIFT;
 	}
 
 	/**
@@ -721,15 +632,13 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 * @return 地図の表示状態
 	 */
 	public int mode() {
-		if (Double.compare(this.scale, MapPanel.MODE_BUS_SCALE) > 0) {
-			return 3;
-		} else if (Double.compare(this.scale, MapPanel.MODE_PREF_SCALE) > 0) {
-			return 2;
-		} else if (Double.compare(this.scale, MapPanel.MODE_WORLD_SCALE) > 0) {
-			return 1;
-		} else {
-			return 0;
-		}
+		int i = 0;
+		do {
+			if (Float.compare(this.scale, MapPanel.MODE_SCALE[i]) > 0) {
+				break;
+			}
+		} while (++i < MapPanel.MODE_SCALE.length);
+		return i;
 	}
 
 	/**
@@ -768,7 +677,7 @@ public class MapPanel extends ExportableComponent implements Printable {
 			Graphics2D offg = (Graphics2D) this.offs.getGraphics();
 			offg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP);
 			// オフスクリーンバッファ
-			offg.setFont(new Font(MapPanel.FONT_FAMILY, Font.PLAIN, 20));
+			offg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 20));
 			String msg = "Now Loading...";
 			FontMetrics metrics = offg.getFontMetrics();
 			offg.drawString(msg, (this.getWidth() - metrics.stringWidth(msg)) / 2, (this.getHeight() - metrics.getHeight()) / 2);
@@ -803,23 +712,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		super.repaint();
 	}
 
-
-	/**
-	 * 市区町村表示のフォントを設定します。
-	 * @param g
-	 */
-	private void setCityFont(Graphics2D g) {
-		int fontSize = 11 + (int)((this.scale - MapPanel.MODE_PREF_SCALE) * 4000);
-		if (fontSize > MapPanel.FONTSIZE_CITY_MAX) {
-			fontSize = MapPanel.FONTSIZE_CITY_MAX;
-		}
-		if (this.mode() == 3) {
-			g.setFont(new Font("Serif", Font.PLAIN, fontSize + 7));
-		} else {
-			g.setFont(new Font(MapPanel.FONT_FAMILY_CITY, Font.PLAIN, fontSize));
-		}
-	}
-	
 	public void setDefaultStyle() {
 		this.COLOR_GROUND = new Color(242, 239, 233);
 		this.COLOR_GROUND_BORDER = new Color(128, 128, 128);
@@ -859,25 +751,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 */
 	public void setOperation(boolean flag) {
 		this.isOperation = flag;
-		if(!flag) {
-			this.repaint();
-		}
-	}
-	
-	/**
-	 * 市区町村表示のフォントを設定します。
-	 * @param g
-	 */
-	private void setPrefectrueFont(Graphics2D g) {
-		int fontSize = 12 + (int)(this.scale * 50000);
-		if (fontSize > MapPanel.FONTSIZE_PREFECTURE_MAX) {
-			fontSize = MapPanel.FONTSIZE_PREFECTURE_MAX;
-		}
-		if (this.mode() == 1) {
-			g.setFont(new Font("Serif", Font.PLAIN, fontSize));
-		} else {
-			g.setFont(new Font(MapPanel.FONT_FAMILY_PREF, Font.BOLD, fontSize + 9));
-		}
 	}
 	
 	public void setAxisVisible(boolean flag) {
@@ -888,15 +761,12 @@ public class MapPanel extends ExportableComponent implements Printable {
 		return this.isAxis;
 	}
 
-	/**
-	 * 道路表示を切り替えます。
-	 */
-	public void switchHighway() {
-		this.isHighway = !this.isHighway;
+	public boolean isLabelFailureVisible() {
+		return this.labeling.isLabelFailureVisible();
 	}
-
-	public void switchLabelFailure() {
-		this.isLabelFailure = !this.isLabelFailure;
+	
+	public void setLabelFailureVisible(boolean flag) {
+		this.labeling.setLabelFailureVisible(flag);
 	}
 
 	/**
@@ -960,7 +830,6 @@ public class MapPanel extends ExportableComponent implements Printable {
 		this.isStationLabelVisible = flag;
 	}
 
-
 	/**
 	 * @return バスのラベル表示有無
 	 */
@@ -990,25 +859,25 @@ public class MapPanel extends ExportableComponent implements Printable {
 	}
 
 	public boolean isLabelShadowVisible() {
-		return this.isLabelShadowVisible;
+		return this.labeling.isLabelFailureVisible();
 	}
 	
 	public void setLabelShadowVisible(boolean flag) {
-		this.isLabelShadowVisible = flag;
+		this.labeling.setLabelShadowVisible(flag);
 	}
 	
 	/**
 	 * @param flag テキストアンチエイリアスのフラグ
 	 */
 	public void setTextAntialiasing(boolean flag) {
-		this.isTextAntialiasing = flag;
+		this.labeling.setTextAntialiasing(flag);
 	}
 	
 	/**
 	 * @return テキストアンチエイリアスの有無
 	 */
 	public boolean isTextAntialiasing() {
-		return this.isTextAntialiasing;
+		return this.labeling.isTextAntialiasing();
 	}
 
 	/**
@@ -1020,9 +889,9 @@ public class MapPanel extends ExportableComponent implements Printable {
 	 */
 	public void zoom(int x, int y, int d) {
 		float newScale = this.scale * (1 + d * MapPanel.SCALE_SENSE);
-		if (newScale > MapPanel.SCALE_MAX) {
+		if (Float.compare(newScale, MapPanel.SCALE_MAX) > 0) {
 			newScale = MapPanel.SCALE_MAX;
-		} else if (newScale < MapPanel.SCALE_MIN) {
+		} else if (Float.compare(newScale, MapPanel.SCALE_MIN) < 0) {
 			newScale = MapPanel.SCALE_MIN;
 		}
 		y = this.getHeight() - y;

@@ -5,11 +5,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 
+import javax.print.PrintException;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
+
+import jp.sourceforge.ma38su.gui.Output;
 
 import controller.MapController;
 
@@ -18,27 +21,48 @@ import controller.MapController;
  * @author ma38su
  */
 public class MapMenu extends JMenuBar {
+	
+	/**
+	 * キーボードによる平行移動感度
+	 */
+	private static final int MOVE_SENSE = 8;
+
 	public MapMenu(final MapPanel panel, final MapController control) {
 
 		JMenu menuFile = new JMenu("ファイル(F)");
 		menuFile.setMnemonic(KeyEvent.VK_F);
 
 		JMenuItem menuFilePrint = new JMenuItem("印刷");
-		menuFilePrint.setActionCommand("print");
 		menuFilePrint.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK));
-		menuFilePrint.addActionListener(control);
+		menuFilePrint.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (panel.isLoaded()) {
+					try {
+						Output.print(panel);
+					} catch (PrintException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
 		menuFile.add(menuFilePrint);
 
 		JMenuItem menuFileExport = new JMenuItem("エクスポート(PNG)");
-		menuFileExport.setActionCommand("exportPNG");
 		menuFileExport.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
-		menuFileExport.addActionListener(control);
+		menuFileExport.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (panel.isLoaded()) {
+					Output.exportPng(panel);
+				}
+			}
+		});
 		menuFile.add(menuFileExport);
 		
 		menuFile.addSeparator();
 
 		JMenuItem menuFileExit = new JMenuItem("終了");
-		menuFileExit.setActionCommand("exit");
 		menuFileExit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -109,8 +133,13 @@ public class MapMenu extends JMenuBar {
 		menuViewLabel.addSeparator();
 		
 		final JCheckBoxMenuItem itemViewLabelFailure = new JCheckBoxMenuItem("配置失敗の表示", false);
-		itemViewLabelFailure.addActionListener(control);
-		itemViewLabelFailure.setActionCommand("label_failure");
+		itemViewLabelFailure.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.setLabelFailureVisible(itemViewLabelFailure.isSelected());
+				panel.repaint();
+			}
+		});
 		menuViewLabel.add(itemViewLabelFailure);
 
 		menuView.addSeparator();
@@ -170,51 +199,74 @@ public class MapMenu extends JMenuBar {
 		JMenu menuMove = new JMenu("移動(M)");
 		menuMove.setMnemonic(KeyEvent.VK_M);
 
-		JMenuItem menu3_1 = new JMenuItem("日本全域を表示倍率");
-		menu3_1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_HOME, InputEvent.CTRL_DOWN_MASK));
-		menu3_1.setActionCommand("move_home");
-		menu3_1.addActionListener(control);
-		menuMove.add(menu3_1);
-
-		JMenuItem menu3_2 = new JMenuItem("数値地図を表示倍率");
-		menu3_2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_COLON, InputEvent.CTRL_DOWN_MASK));
-		menu3_2.setActionCommand("move_sdf");
-		menu3_2.addActionListener(control);
-		menuMove.add(menu3_2);
+		JMenuItem menuMoveAllJapan = new JMenuItem("日本全域を表示倍率");
+		menuMoveAllJapan.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_HOME, InputEvent.CTRL_DOWN_MASK));
+		menuMoveAllJapan.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.moveDefault();
+				panel.repaint();
+			}
+		});
+		menuMove.add(menuMoveAllJapan);
 
 		menuMove.addSeparator();
 
-		JMenuItem menu3_3 = new JMenuItem("表示位置を東へ移動");
-		menu3_3.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.ALT_DOWN_MASK));
-		menu3_3.setActionCommand("move_right");
-		menu3_3.addActionListener(control);
-		menuMove.add(menu3_3);
+		JMenuItem menuMoveEast = new JMenuItem("表示位置を東へ移動");
+		menuMoveEast.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.ALT_DOWN_MASK));
+		menuMoveEast.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.moveLocation(-MOVE_SENSE, 0);
+				panel.repaint();
+			}
+		});
+		menuMove.add(menuMoveEast);
 
-		JMenuItem menu3_4 = new JMenuItem("表示位置を西へ移動");
-		menu3_4.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.ALT_DOWN_MASK));
-		menu3_4.setActionCommand("move_left");
-		menu3_4.addActionListener(control);
-		menuMove.add(menu3_4);
+		JMenuItem menuMoveWest = new JMenuItem("表示位置を西へ移動");
+		menuMoveWest.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.ALT_DOWN_MASK));
+		menuMoveWest.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.moveLocation(MOVE_SENSE, 0);
+				panel.repaint();
+			}
+		});
+		menuMove.add(menuMoveWest);
 
-		JMenuItem menu3_5 = new JMenuItem("表示位置を南へ移動");
-		menu3_5.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.ALT_DOWN_MASK));
-		menu3_5.setActionCommand("move_down");
-		menu3_5.addActionListener(control);
-		menuMove.add(menu3_5);
+		JMenuItem menuMoveSouth = new JMenuItem("表示位置を南へ移動");
+		menuMoveSouth.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.ALT_DOWN_MASK));
+		menuMoveSouth.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.moveLocation(0, -MOVE_SENSE);
+				panel.repaint();
+			}
+		});
+		menuMove.add(menuMoveSouth);
 
-		JMenuItem menu3_6 = new JMenuItem("表示位置を北へ移動");
-		menu3_6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.ALT_DOWN_MASK));
-		menu3_6.setActionCommand("move_up");
-		menu3_6.addActionListener(control);
-		menuMove.add(menu3_6);
+		JMenuItem menuMoveNorth = new JMenuItem("表示位置を北へ移動");
+		menuMoveNorth.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.ALT_DOWN_MASK));
+		menuMoveNorth.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				panel.moveLocation(0, MOVE_SENSE);
+				panel.repaint();
+			}
+		});
+		menuMove.add(menuMoveNorth);
 		
 		menuMove.addSeparator();
 		
-		JMenuItem menu3_7 = new JMenuItem("緯度経度を指定して移動");
-		menu3_7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK));
-		menu3_7.setActionCommand("move_location");
-		menu3_7.addActionListener(control);
-		menuMove.add(menu3_7);
+		JMenuItem menuMoveDialog = new JMenuItem("緯度経度を指定して移動");
+		menuMoveDialog.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK));
+		menuMoveDialog.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				DialogFactory.locationDialog(panel);
+			}
+		});
+		menuMove.add(menuMoveDialog);
 
 		this.add(menuFile);
 		this.add(menuView);
